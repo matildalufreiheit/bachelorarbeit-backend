@@ -1,9 +1,15 @@
 const express = require('express');
+const cors = require('cors'); 
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = 3000;
+
+// CORS-Middleware einbinden
+app.use(cors({
+    origin: 'http://localhost:4200' // Erlaubt nur Angular-Frontend
+}));
 
 // Body parser middleware, um JSON zu verarbeiten
 app.use(bodyParser.json());
@@ -158,17 +164,18 @@ app.delete('/angebote/:id', (req, res) => {
 
 // CRUD-Operationen für Tags
 
-// Alle Tags abrufen
+// Nur Tags abrufen, die nicht NULL sind
 app.get('/tags', (req, res) => {
-    const query = 'SELECT * FROM Tags';
+    const query = 'SELECT * FROM Tags WHERE Tag IS NOT NULL';
     db.all(query, (err, rows) => {
         if (err) {
-            res.status(500).json({ error: err.message });
+            res.status(400).json({ error: err.message });
             return;
         }
         res.json({ data: rows });
     });
 });
+
 
 // Neuen Tag hinzufügen
 app.post('/tags', (req, res) => {
@@ -297,4 +304,16 @@ app.delete('/angebote/:angebotId/suchbegriffe/:suchbegriffId', (req, res) => {
 // Server starten
 app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
+});
+
+// Einzigartige Zielgruppen abrufen
+app.get('/zielgruppen', (req, res) => {
+    const query = 'SELECT DISTINCT Zielgruppe FROM Angebot';
+    db.all(query, (err, rows) => {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({ data: rows });
+    });
 });
