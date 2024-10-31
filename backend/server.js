@@ -314,6 +314,20 @@ app.get('/zielgruppen', (req, res) => {
             res.status(400).json({ error: err.message });
             return;
         }
-        res.json({ data: rows });
+
+        // Extrahieren und Zerlegen der Zielgruppen in eine Menge
+        let uniqueZielgruppen = new Set();
+        rows.forEach(row => {
+            row.Zielgruppe.split(', ').forEach(ziel => {
+                uniqueZielgruppen.add(ziel.trim());
+            });
+        });
+
+        // Konvertieren der Menge in ein Array und sortieren
+        const sortedZielgruppen = Array.from(uniqueZielgruppen).sort();
+
+        // Antwort senden
+        res.json({ data: sortedZielgruppen });
     });
 });
+
