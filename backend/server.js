@@ -97,9 +97,14 @@ app.delete('/institutionen/:id', (req, res) => {
 
 // CRUD-Operationen für Angebote
 
-// Alle Angebote abrufen
+// Alle Angebote mit verknüpften Institutionen abrufen
 app.get('/angebote', (req, res) => {
-    const query = 'SELECT * FROM Angebot';
+    const query = `
+        SELECT Angebot.ID, Angebot.InstitutionID, Angebot.Art, Angebot.Zielgruppe, 
+               Institution.Name, Institution.Beschreibung, Institution.URL
+        FROM Angebot
+        JOIN Institution ON Angebot.InstitutionID = Institution.ID;
+    `;
     db.all(query, (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
@@ -108,6 +113,7 @@ app.get('/angebote', (req, res) => {
         res.json({ data: rows });
     });
 });
+
 
 // Spezifisches Angebot abrufen
 app.get('/angebote/:id', (req, res) => {
