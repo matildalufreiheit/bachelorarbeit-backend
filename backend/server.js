@@ -97,22 +97,36 @@ app.delete('/institutionen/:id', (req, res) => {
 
 // CRUD-Operationen für Angebote
 
-// Alle Angebote mit verknüpften Institutionen abrufen
+// Alle Angebote mit verknüpften Institutionen und Tags abrufen
 app.get('/angebote', (req, res) => {
     const query = `
-        SELECT Angebot.ID, Angebot.InstitutionID, Angebot.Art, Angebot.Zielgruppe, 
-               Institution.Name, Institution.Beschreibung, Institution.URL
+        SELECT 
+            Angebot.ID, 
+            Angebot.InstitutionID, 
+            Angebot.Art, 
+            Angebot.Zielgruppe, 
+            Institution.Name, 
+            Institution.Beschreibung, 
+            Institution.URL,
+            GROUP_CONCAT(Angebot_Tags.TagID) AS TagIDs
         FROM Angebot
-        JOIN Institution ON Angebot.InstitutionID = Institution.ID;
+        JOIN Institution ON Angebot.InstitutionID = Institution.ID
+        LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
+        GROUP BY Angebot.ID, Institution.ID;
     `;
     db.all(query, (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
+        // Konvertiere die TagIDs in ein Array
+        rows.forEach(row => {
+            row.TagIDs = row.TagIDs ? row.TagIDs.split(',').map(Number) : [];
+        });
         res.json({ data: rows });
     });
 });
+
 
 
 // Spezifisches Angebot abrufen
