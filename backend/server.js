@@ -15,7 +15,7 @@ app.use(cors({
 app.use(bodyParser.json());
 
 // Verbindung zur SQLite-Datenbank herstellen
-const db = new sqlite3.Database('./ba.db', (err) => {
+const db = new sqlite3.Database('./ba_Kopie_final.db', (err) => {
     if (err) {
         console.error('Fehler beim Verbinden zur Datenbank:', err);
     } else {
@@ -350,4 +350,20 @@ app.get('/zielgruppen', (req, res) => {
         res.json({ data: sortedZielgruppen });
     });
 });
+
+app.get('/angebot_tags', (req, res) => {
+    const query = 'SELECT * FROM Angebot_Tags';
+    db.all(query, (err, rows) => {
+      if (err) {
+        //console.error('Fehler beim Abrufen der Angebot_Tags:', err);
+        res.status(500).json({ error: 'Fehler beim Abrufen der Angebot_Tags' });
+        return;
+      }
+  
+      //console.log('Daten aus Angebot_Tags:', rows);
+      res.json({ data: rows });
+    });
+  });
+  
+  
 
