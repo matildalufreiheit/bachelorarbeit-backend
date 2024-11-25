@@ -213,6 +213,39 @@ app.get('/angebot_tags', (req, res) => {
       res.json({ data: rows });
     });
   });
+
+  app.post('/tags', (req, res) => {
+    const { tag } = req.body;
+  
+    if (!tag) {
+      return res.status(400).json({ error: 'Tag darf nicht leer sein.' });
+    }
+  
+    const query = 'INSERT INTO Tags (Tag) VALUES (?)';
+    db.run(query, [tag], function (err) {
+      if (err) {
+        return res.status(500).json({ error: 'Fehler beim Hinzufügen des Tags.' });
+      }
+      res.json({ id: this.lastID, tag });
+    });
+  });
+  
+  app.post('/zielgruppe', (req, res) => {
+    const { name } = req.body;
+  
+    if (!name) {
+      return res.status(400).json({ error: 'Zielgruppe darf nicht leer sein.' });
+    }
+  
+    const query = 'INSERT INTO Zielgruppe (Name) VALUES (?)';
+    db.run(query, [name], function (err) {
+      if (err) {
+        return res.status(500).json({ error: 'Fehler beim Hinzufügen der Zielgruppe.' });
+      }
+      res.json({ id: this.lastID, name });
+    });
+  });
+  
   
 // Server starten
 app.listen(PORT, () => {
