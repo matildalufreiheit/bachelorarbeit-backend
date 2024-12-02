@@ -214,6 +214,18 @@ app.get('/angebot_tags', (req, res) => {
     });
   });
 
+  // Bestehende Angebotsarten abrufen
+app.get('/angebotsarten', (req, res) => {
+    const query = 'SELECT DISTINCT Art FROM Angebot WHERE Art IS NOT NULL';
+    db.all(query, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Fehler beim Abrufen der Angebotsarten.' });
+        }
+        res.json({ data: rows });
+    });
+});
+
+
   app.post('/tags', (req, res) => {
     const { tag } = req.body;
   
@@ -245,7 +257,75 @@ app.get('/angebot_tags', (req, res) => {
       res.json({ id: this.lastID, name });
     });
   });
+
+  app.post('/institution', (req, res) => {
+    const { name, description, url } = req.body;
   
+    if (!name || !description || !url) {
+      return res.status(400).json({ error: 'Name, Beschreibung und URL sind erforderlich.' });
+    }
+  
+    const query = 'INSERT INTO Institution (Name, Beschreibung, URL) VALUES (?, ?, ?)';
+    db.run(query, [name, description, url], function (err) {
+      if (err) {
+        console.error('Fehler beim Erstellen der Institution:', err.message);
+        return res.status(500).json({ error: 'Fehler beim Erstellen der Institution.' });
+      }
+      res.json({ success: true, id: this.lastID });
+    });
+  });
+
+  app.post('/angebote', (req, res) => {
+    const { name, beschreibung, art, url, tags, zielgruppen, institution } = req.body;
+
+    db.serialize(() => {
+        // Institution einfügen, falls nicht vorhanden
+        const institutionQuery = `INSERT OR IGNORE INTO Institution (Name, Beschreibung, URL) VALUES (?, ?, ?)`;
+        db.run(institutionQuery, [institution.name, institution.beschreibung, institution.url], function (err) {
+            if (err) {
+                return res.status(500).json({ error: 'Fehler beim Einfügen der Institution' });
+            }
+
+            // Angebot hinzufügen
+            const angebotQuery = `INSERT INTO Angebot (InstitutionID, Art) VALUES (?, ?)`;
+            const institutionId = this.lastID;
+            db.run(angebotQuery, [institutionId, art], function (err) {
+                if (err) {
+                    return res.status(500).json({ error: 'Fehler beim Einfügen des Angebots' });
+                }
+
+                const angebotId = this.lastID;
+
+                // Tags zur Tabelle Angebot_Tags hinzufügen
+                const tagQueries = tags.map(tagId => {
+                    return new Promise((resolve, reject) => {
+                        const tagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`;
+                        db.run(tagQuery, [angebotId, tagId], (err) => {
+                            if (err) reject(err);
+                            else resolve();
+                        });
+                    });
+                });
+
+                // Zielgruppen zur Tabelle Angebote_Zielgruppe hinzufügen
+                const zielgruppenQueries = zielgruppen.map(zielgruppenId => {
+                    return new Promise((resolve, reject) => {
+                        const zielgruppenQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`;
+                        db.run(zielgruppenQuery, [angebotId, zielgruppenId], (err) => {
+                            if (err) reject(err);
+                            else resolve();
+                        });
+                    });
+                });
+
+                Promise.all([...tagQueries, ...zielgruppenQueries])
+                    .then(() => res.json({ success: true, angebotId }))
+                    .catch(error => res.status(500).json({ error }));
+            });
+        });
+    });
+});
+
   
 // Server starten
 app.listen(PORT, () => {
