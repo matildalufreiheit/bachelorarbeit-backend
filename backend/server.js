@@ -326,6 +326,111 @@ app.get('/angebotsarten', (req, res) => {
     });
 });
 
+// Alle Angebotsnamen abrufen
+app.get('/angebote/namen', (req, res) => {
+    const query = `SELECT Name FROM Angebot`;
+    db.all(query, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Fehler beim Abrufen der Angebotsnamen.' });
+        }
+        res.json({ data: rows });
+    });
+});
+
+app.get('/institutionen', (req, res) => {
+    const query = `SELECT Name FROM Institution`;
+    db.all(query, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Fehler beim Abrufen der Institutionen.' });
+        }
+        res.json({ data: rows });
+    });
+});
+
+
+//Angebot löschen
+app.delete('/institution/name/:name', (req, res) => {
+    const rawName = req.params.name;
+    const name = decodeURIComponent(rawName); // URL-decodierter Name
+
+    console.log(`Dekodierter Name der Institution: "${name}"`);
+
+    // Prüfen, ob die Institution existiert
+    const queryCheck = `SELECT ID FROM Institution WHERE LOWER(Name) = LOWER(?)`;
+
+    db.get(queryCheck, [name], (err, row) => {
+        if (err) {
+            console.error('Fehler beim Abrufen der Institution:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Abrufen der Institution.' });
+        }
+
+        if (!row) {
+            return res.status(404).json({ error: 'Institution nicht gefunden.' });
+        }
+
+        const institutionId = row.ID;
+
+        // Institution löschen (ggf. auch verknüpfte Angebote löschen)
+        const queryDeleteInstitution = `DELETE FROM Institution WHERE ID = ?`;
+        db.run(queryDeleteInstitution, [institutionId], function (err) {
+            if (err) {
+                console.error('Fehler beim Löschen der Institution:', err.message);
+                return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
+            }
+
+            console.log(`Institution mit ID ${institutionId} erfolgreich gelöscht.`);
+            res.json({ success: true, message: `Institution "${name}" erfolgreich gelöscht.` });
+        });
+    });
+});
+
+
+
+
+// Angebot aktualisieren
+app.put('/angebote/:id', (req, res) => {
+    const { id } = req.params;
+    const { art, beschreibung, tags, zielgruppen, institution } = req.body;
+
+    db.serialize(() => {
+        const updateQuery = `UPDATE Angebot SET Art = ?, Beschreibung = ? WHERE ID = ?`;
+        db.run(updateQuery, [art, beschreibung, id], function (err) {
+            if (err) {
+                return res.status(500).json({ error: 'Fehler beim Aktualisieren des Angebots.' });
+            }
+
+            // Tags und Zielgruppen aktualisieren (vorher löschen, dann hinzufügen)
+            const deleteTagsQuery = `DELETE FROM Angebot_Tags WHERE AngebotID = ?`;
+            const deleteZielgruppenQuery = `DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?`;
+
+            db.run(deleteTagsQuery, [id], () => {
+                const tagQueries = tags.map(tagId => {
+                    return new Promise((resolve, reject) => {
+                        const insertTagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`;
+                        db.run(insertTagQuery, [id, tagId], err => (err ? reject(err) : resolve()));
+                    });
+                });
+
+                Promise.all(tagQueries).then(() => {
+                    db.run(deleteZielgruppenQuery, [id], () => {
+                        const zielgruppenQueries = zielgruppen.map(zielgruppenId => {
+                            return new Promise((resolve, reject) => {
+                                const insertZielgruppeQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`;
+                                db.run(insertZielgruppeQuery, [id, zielgruppenId], err => (err ? reject(err) : resolve()));
+                            });
+                        });
+
+                        Promise.all(zielgruppenQueries).then(() => {
+                            res.json({ success: true, message: 'Angebot erfolgreich aktualisiert.' });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+
+
 // Benutzer registrieren
 app.post('/register', async (req, res) => {
     const { benutzername, passwort, rolle } = req.body;
