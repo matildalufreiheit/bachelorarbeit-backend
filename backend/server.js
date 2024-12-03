@@ -162,6 +162,82 @@ app.get('/angebote', (req, res) => {
     });
 });
 
+app.get('/angebote/:id', (req, res) => {
+    const { id } = req.params;
+    const query = `
+      SELECT Angebot.*, 
+             GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs, 
+             GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs
+      FROM Angebot
+      LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
+      LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
+      WHERE Angebot.ID = ?
+      GROUP BY Angebot.ID;
+    `;
+  
+    db.get(query, [id], (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Fehler beim Abrufen des Angebots.' });
+      }
+      res.json({ data: row });
+    });
+});
+  
+app.put('/angebote/:id', (req, res) => {
+    const { id } = req.params;
+    const { art, beschreibung, tags, zielgruppen, institution } = req.body;
+
+    db.serialize(() => {
+        // Institution aktualisieren
+        const updateInstitutionQuery = `UPDATE Institution SET Name = ?, Beschreibung = ?, URL = ? WHERE ID = ?`;
+        db.run(
+            updateInstitutionQuery,
+            [institution.name, institution.beschreibung, institution.url, institution.id],
+            function (err) {
+                if (err) {
+                    return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
+                }
+
+                // Angebot aktualisieren
+                const updateAngebotQuery = `UPDATE Angebot SET Art = ?, Beschreibung = ? WHERE ID = ?`;
+                db.run(updateAngebotQuery, [art, beschreibung, id], function (err) {
+                    if (err) {
+                        return res.status(500).json({ error: 'Fehler beim Aktualisieren des Angebots.' });
+                    }
+
+                    // Tags und Zielgruppen aktualisieren
+                    const deleteTagsQuery = `DELETE FROM Angebot_Tags WHERE AngebotID = ?`;
+                    const deleteZielgruppenQuery = `DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?`;
+
+                    db.run(deleteTagsQuery, [id], () => {
+                        const tagQueries = tags.map(tagId => {
+                            return new Promise((resolve, reject) => {
+                                const insertTagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`;
+                                db.run(insertTagQuery, [id, tagId], err => (err ? reject(err) : resolve()));
+                            });
+                        });
+
+                        Promise.all(tagQueries).then(() => {
+                            db.run(deleteZielgruppenQuery, [id], () => {
+                                const zielgruppenQueries = zielgruppen.map(zielgruppenId => {
+                                    return new Promise((resolve, reject) => {
+                                        const insertZielgruppeQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`;
+                                        db.run(insertZielgruppeQuery, [id, zielgruppenId], err => (err ? reject(err) : resolve()));
+                                    });
+                                });
+
+                                Promise.all(zielgruppenQueries).then(() => {
+                                    res.json({ success: true, message: 'Angebot erfolgreich aktualisiert.' });
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+        );
+    });
+});
+
 // Nur Tags abrufen, die nicht NULL sind
 app.get('/tags', (req, res) => {
     const query = 'SELECT * FROM Tags WHERE Tag IS NOT NULL';
@@ -507,8 +583,32 @@ app.delete('/benutzer/:id', (req, res) => {
     });
 });
 
+app.delete('/tags/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM Tags WHERE ID = ?';
+  
+    db.run(query, [id], function (err) {
+      if (err) {
+        res.status(500).json({ error: 'Fehler beim Löschen des Tags.' });
+        return;
+      }
+      res.json({ success: true });
+    });
+});
 
-
+app.delete('/zielgruppe/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM Zielgruppe WHERE ID = ?';
+  
+    db.run(query, [id], function (err) {
+      if (err) {
+        res.status(500).json({ error: 'Fehler beim Löschen der Zielgruppe.' });
+        return;
+      }
+      res.json({ success: true });
+    });
+});
+  
 // Server starten
 app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
