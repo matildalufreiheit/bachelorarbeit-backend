@@ -414,7 +414,7 @@ app.get('/angebote/namen', (req, res) => {
 });
 
 app.get('/institutionen', (req, res) => {
-    const query = `SELECT Name FROM Institution`;
+    const query = `SELECT ID, Name FROM Institution`;
     db.all(query, (err, rows) => {
         if (err) {
             return res.status(500).json({ error: 'Fehler beim Abrufen der Institutionen.' });
@@ -422,6 +422,7 @@ app.get('/institutionen', (req, res) => {
         res.json({ data: rows });
     });
 });
+
 
 
 //Angebot löschen
@@ -463,41 +464,98 @@ app.delete('/institution/name/:name', (req, res) => {
 
 
 
-// Angebot aktualisieren
-app.put('/angebote/:id', (req, res) => {
-    const { id } = req.params;
-    const { art, beschreibung, tags, zielgruppen, institution } = req.body;
+// // Angebot aktualisieren
+// app.put('/angebote/:id', (req, res) => {
+//     const { id } = req.params;
+//     const { art, beschreibung, tags, zielgruppen, institution } = req.body;
+
+//     db.serialize(() => {
+//         const updateQuery = `UPDATE Angebot SET Art = ?, Beschreibung = ? WHERE ID = ?`;
+//         db.run(updateQuery, [art, beschreibung, id], function (err) {
+//             if (err) {
+//                 return res.status(500).json({ error: 'Fehler beim Aktualisieren des Angebots.' });
+//             }
+
+//             // Tags und Zielgruppen aktualisieren (vorher löschen, dann hinzufügen)
+//             const deleteTagsQuery = `DELETE FROM Angebot_Tags WHERE AngebotID = ?`;
+//             const deleteZielgruppenQuery = `DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?`;
+
+//             db.run(deleteTagsQuery, [id], () => {
+//                 const tagQueries = tags.map(tagId => {
+//                     return new Promise((resolve, reject) => {
+//                         const insertTagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`;
+//                         db.run(insertTagQuery, [id, tagId], err => (err ? reject(err) : resolve()));
+//                     });
+//                 });
+
+//                 Promise.all(tagQueries).then(() => {
+//                     db.run(deleteZielgruppenQuery, [id], () => {
+//                         const zielgruppenQueries = zielgruppen.map(zielgruppenId => {
+//                             return new Promise((resolve, reject) => {
+//                                 const insertZielgruppeQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`;
+//                                 db.run(insertZielgruppeQuery, [id, zielgruppenId], err => (err ? reject(err) : resolve()));
+//                             });
+//                         });
+
+//                         Promise.all(zielgruppenQueries).then(() => {
+//                             res.json({ success: true, message: 'Angebot erfolgreich aktualisiert.' });
+//                         });
+//                     });
+//                 });
+//             });
+//         });
+//     });
+// });
+
+app.put('/institution/:id', (req, res) => {
+    const { id } = req.params; // Institution ID aus der URL
+    const { Name, Beschreibung, URL, Tags, Zielgruppen, Art } = req.body; // Neue Werte
 
     db.serialize(() => {
-        const updateQuery = `UPDATE Angebot SET Art = ?, Beschreibung = ? WHERE ID = ?`;
-        db.run(updateQuery, [art, beschreibung, id], function (err) {
+        // Institution aktualisieren
+        const query = `UPDATE Institution SET Name = ?, Beschreibung = ?, URL = ? WHERE ID = ?`;
+        db.run(query, [Name, Beschreibung, URL, id], function (err) {
             if (err) {
-                return res.status(500).json({ error: 'Fehler beim Aktualisieren des Angebots.' });
+                console.error('Fehler beim Aktualisieren der Institution:', err.message);
+                return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
             }
 
-            // Tags und Zielgruppen aktualisieren (vorher löschen, dann hinzufügen)
-            const deleteTagsQuery = `DELETE FROM Angebot_Tags WHERE AngebotID = ?`;
-            const deleteZielgruppenQuery = `DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?`;
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Institution nicht gefunden.' });
+            }
+
+            // Tags und Zielgruppen aktualisieren
+            const deleteTagsQuery = `DELETE FROM Angebot_Tags WHERE AngebotID IN (SELECT ID FROM Angebot WHERE InstitutionID = ?)`;
+            const deleteZielgruppenQuery = `DELETE FROM Angebote_Zielgruppe WHERE AngebotID IN (SELECT ID FROM Angebot WHERE InstitutionID = ?)`;
+            const updateArtQuery = `UPDATE Angebot SET Art = ? WHERE InstitutionID = ?`;
 
             db.run(deleteTagsQuery, [id], () => {
-                const tagQueries = tags.map(tagId => {
+                const tagQueries = Tags.map(tagId => {
                     return new Promise((resolve, reject) => {
-                        const insertTagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`;
+                        const insertTagQuery = `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES ((SELECT ID FROM Angebot WHERE InstitutionID = ?), ?)`;
                         db.run(insertTagQuery, [id, tagId], err => (err ? reject(err) : resolve()));
                     });
                 });
 
                 Promise.all(tagQueries).then(() => {
                     db.run(deleteZielgruppenQuery, [id], () => {
-                        const zielgruppenQueries = zielgruppen.map(zielgruppenId => {
+                        const zielgruppenQueries = Zielgruppen.map(zielgruppenId => {
                             return new Promise((resolve, reject) => {
-                                const insertZielgruppeQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`;
+                                const insertZielgruppeQuery = `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES ((SELECT ID FROM Angebot WHERE InstitutionID = ?), ?)`;
                                 db.run(insertZielgruppeQuery, [id, zielgruppenId], err => (err ? reject(err) : resolve()));
                             });
                         });
 
                         Promise.all(zielgruppenQueries).then(() => {
-                            res.json({ success: true, message: 'Angebot erfolgreich aktualisiert.' });
+                            db.run(updateArtQuery, [Art, id], err => {
+                                if (err) {
+                                    console.error('Fehler beim Aktualisieren der Angebotsart:', err.message);
+                                    return res.status(500).json({ error: 'Fehler beim Aktualisieren der Angebotsart.' });
+                                }
+
+                                console.log(`Institution mit ID ${id} erfolgreich aktualisiert.`);
+                                res.json({ success: true, message: `Institution mit ID ${id} erfolgreich aktualisiert.` });
+                            });
                         });
                     });
                 });
@@ -505,6 +563,7 @@ app.put('/angebote/:id', (req, res) => {
         });
     });
 });
+
 
 
 // Benutzer registrieren
