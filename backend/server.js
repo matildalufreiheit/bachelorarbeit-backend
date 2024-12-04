@@ -423,43 +423,26 @@ app.get('/institutionen', (req, res) => {
     });
 });
 
+//Löschen
+app.delete('/institution/:id', (req, res) => {
+    const { id } = req.params;
 
-
-//Angebot löschen
-app.delete('/institution/name/:name', (req, res) => {
-    const rawName = req.params.name;
-    const name = decodeURIComponent(rawName); // URL-decodierter Name
-
-    console.log(`Dekodierter Name der Institution: "${name}"`);
-
-    // Prüfen, ob die Institution existiert
-    const queryCheck = `SELECT ID FROM Institution WHERE LOWER(Name) = LOWER(?)`;
-
-    db.get(queryCheck, [name], (err, row) => {
+    const query = `DELETE FROM Institution WHERE ID = ?`;
+    db.run(query, [id], function (err) {
         if (err) {
-            console.error('Fehler beim Abrufen der Institution:', err.message);
-            return res.status(500).json({ error: 'Fehler beim Abrufen der Institution.' });
+            console.error('Fehler beim Löschen der Institution:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
         }
 
-        if (!row) {
+        if (this.changes === 0) {
             return res.status(404).json({ error: 'Institution nicht gefunden.' });
         }
 
-        const institutionId = row.ID;
-
-        // Institution löschen (ggf. auch verknüpfte Angebote löschen)
-        const queryDeleteInstitution = `DELETE FROM Institution WHERE ID = ?`;
-        db.run(queryDeleteInstitution, [institutionId], function (err) {
-            if (err) {
-                console.error('Fehler beim Löschen der Institution:', err.message);
-                return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
-            }
-
-            console.log(`Institution mit ID ${institutionId} erfolgreich gelöscht.`);
-            res.json({ success: true, message: `Institution "${name}" erfolgreich gelöscht.` });
-        });
+        console.log(`Institution mit ID ${id} erfolgreich gelöscht.`);
+        res.json({ success: true, message: `Institution mit ID ${id} erfolgreich gelöscht.` });
     });
 });
+
 
 
 
