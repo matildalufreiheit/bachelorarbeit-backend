@@ -281,112 +281,43 @@ app.get('/benutzer', (req, res) => {
 //PUT
 
 app.put('/update-institution/:id', (req, res) => {
-    const institutionId = req.params.id;
-    const { name, beschreibung, url, tags, zielgruppen, arten } = req.body;
-  
-    if (!name || !beschreibung || !url) {
-      return res.status(400).json({ error: 'Name, Beschreibung und URL sind erforderlich.' });
-    }
-  
-    db.serialize(() => {
-      // Schritt 1: Institution aktualisieren
-      db.run(
-        `UPDATE Institution SET Name = ?, Beschreibung = ?, URL = ? WHERE ID = ?`,
-        [name, beschreibung, url, institutionId],
-        function (err) {
-          if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
-          }
-  
-          // Schritt 2: Tags aktualisieren
-          db.run(`DELETE FROM Angebot_Tags WHERE AngebotID IN (SELECT ID FROM Angebot WHERE InstitutionID = ?)`, [institutionId], (err) => {
-            if (err) {
-              console.error(err.message);
-              return res.status(500).json({ error: 'Fehler beim Aktualisieren der Tags.' });
-            }
-  
-            if (tags && tags.length > 0) {
-              const tagInsertions = tags.map(
-                (tagId) =>
-                  new Promise((resolve, reject) => {
-                    db.run(
-                      `INSERT INTO Angebot_Tags (AngebotID, TagID) SELECT ID, ? FROM Angebot WHERE InstitutionID = ?`,
-                      [tagId, institutionId],
-                      (err) => {
-                        if (err) reject(err);
-                        resolve();
-                      }
-                    );
-                  })
-              );
-  
-              Promise.all(tagInsertions).catch((err) => console.error(err.message));
-            }
-          });
-  
-          // Schritt 3: Zielgruppen aktualisieren
-          db.run(
-            `DELETE FROM Angebote_Zielgruppe WHERE AngebotID IN (SELECT ID FROM Angebot WHERE InstitutionID = ?)`,
-            [institutionId],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-                return res.status(500).json({ error: 'Fehler beim Aktualisieren der Zielgruppen.' });
-              }
-  
-              if (zielgruppen && zielgruppen.length > 0) {
-                const zielgruppenInsertions = zielgruppen.map(
-                  (zielgruppeId) =>
-                    new Promise((resolve, reject) => {
-                      db.run(
-                        `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) SELECT ID, ? FROM Angebot WHERE InstitutionID = ?`,
-                        [zielgruppeId, institutionId],
-                        (err) => {
-                          if (err) reject(err);
-                          resolve();
-                        }
-                      );
-                    })
-                );
-  
-                Promise.all(zielgruppenInsertions).catch((err) => console.error(err.message));
-              }
-            }
-          );
-  
-          // Schritt 4: Arten aktualisieren
-          db.run(`DELETE FROM Angebot_Art WHERE AngebotID IN (SELECT ID FROM Angebot WHERE InstitutionID = ?)`, [institutionId], (err) => {
-            if (err) {
-              console.error(err.message);
-              return res.status(500).json({ error: 'Fehler beim Aktualisieren der Arten.' });
-            }
-  
-            if (arten && arten.length > 0) {
-              const artenInsertions = arten.map(
-                (artId) =>
-                  new Promise((resolve, reject) => {
-                    db.run(
-                      `INSERT INTO Angebot_Art (AngebotID, ArtID) SELECT ID, ? FROM Angebot WHERE InstitutionID = ?`,
-                      [artId, institutionId],
-                      (err) => {
-                        if (err) reject(err);
-                        resolve();
-                      }
-                    );
-                  })
-              );
-  
-              Promise.all(artenInsertions).catch((err) => console.error(err.message));
-            }
-          });
-  
-          // Erfolgreiches Update
-          res.status(200).json({ message: 'Institution erfolgreich aktualisiert!' });
-        }
-      );
-    });
+  const institutionId = req.params.id;
+  const { name, beschreibung, url } = req.body;
+
+  const fieldsToUpdate = [];
+  const values = [];
+
+  if (name) {
+      fieldsToUpdate.push('Name = ?');
+      values.push(name);
+  }
+  if (beschreibung) {
+      fieldsToUpdate.push('Beschreibung = ?');
+      values.push(beschreibung);
+  }
+  if (url) {
+      fieldsToUpdate.push('URL = ?');
+      values.push(url);
+  }
+
+  if (fieldsToUpdate.length === 0) {
+      return res.status(400).json({ error: 'Keine gültigen Felder zum Aktualisieren übergeben.' });
+  }
+
+  const updateQuery = `UPDATE Institution SET ${fieldsToUpdate.join(', ')} WHERE ID = ?`;
+  values.push(institutionId);
+
+  db.run(updateQuery, values, function (err) {
+      if (err) {
+          console.error('Fehler beim Aktualisieren der Institution:', err.message);
+          return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
+      }
+
+      res.status(200).json({ message: 'Institution erfolgreich aktualisiert!' });
+  });
 });
+
+
 
 app.put('/tags/:id', (req, res) => {
   const { id } = req.params;
