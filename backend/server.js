@@ -268,7 +268,7 @@ app.get('/institutionen', (req, res) => {
 });
 
 app.get('/benutzer', (req, res) => {
-    const query = 'SELECT ID, Benutzername, Rolle FROM Benutzer';
+    const query = 'SELECT ID, Benutzername FROM Benutzer';
     db.all(query, (err, rows) => {
         if (err) {
             return res.status(500).json({ error: 'Fehler beim Abrufen der Benutzer.' });
@@ -386,7 +386,55 @@ app.put('/update-institution/:id', (req, res) => {
         }
       );
     });
+});
+
+app.put('/tags/:id', (req, res) => {
+  const { id } = req.params;
+  const { tag } = req.body;
+
+  if (!tag) {
+      return res.status(400).json({ error: 'Tag darf nicht leer sein.' });
+  }
+
+  const query = 'UPDATE Tags SET Tag = ? WHERE ID = ?';
+  db.run(query, [tag, id], function (err) {
+      if (err) {
+          console.error('Fehler beim Aktualisieren des Tags:', err.message);
+          return res.status(500).json({ error: 'Fehler beim Aktualisieren des Tags.' });
+      }
+
+      if (this.changes === 0) {
+          res.status(404).json({ error: 'Tag nicht gefunden.' });
+      } else {
+          res.json({ success: true, message: `Tag mit ID ${id} erfolgreich aktualisiert.` });
+      }
   });
+});
+
+app.put('/zielgruppen/:id', (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+
+  if (!name) {
+      return res.status(400).json({ error: 'Zielgruppe darf nicht leer sein.' });
+  }
+
+  const query = 'UPDATE Zielgruppe SET Name = ? WHERE ID = ?';
+  db.run(query, [name, id], function (err) {
+      if (err) {
+          console.error('Fehler beim Aktualisieren der Zielgruppe:', err.message);
+          return res.status(500).json({ error: 'Fehler beim Aktualisieren der Zielgruppe.' });
+      }
+
+      if (this.changes === 0) {
+          res.status(404).json({ error: 'Zielgruppe nicht gefunden.' });
+      } else {
+          res.json({ success: true, message: `Zielgruppe mit ID ${id} erfolgreich aktualisiert.` });
+      }
+  });
+});
+
+
 
 
 //POST
@@ -616,42 +664,59 @@ app.delete('/institution/:id', (req, res) => {
     });
 });
 
+// Benutzer löschen
 app.delete('/benutzer/:id', (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const query = 'DELETE FROM Benutzer WHERE ID = ?';
-    db.run(query, [id], function (err) {
-        if (err) {
-            return res.status(500).json({ error: 'Fehler beim Löschen des Benutzers.' });
-        }
-        res.json({ success: true });
-    });
+  const query = `DELETE FROM Benutzer WHERE ID = ?`;
+  db.run(query, [id], function (err) {
+    if (err) {
+      console.error('Fehler beim Löschen des Benutzers:', err.message);
+      return res.status(500).json({ error: 'Fehler beim Löschen des Benutzers.' });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Benutzer nicht gefunden.' });
+    }
+
+    res.json({ success: true, message: 'Benutzer erfolgreich gelöscht.' });
+  });
 });
 
 app.delete('/tags/:id', (req, res) => {
-    const { id } = req.params;
-    const query = 'DELETE FROM Tags WHERE ID = ?';
-  
-    db.run(query, [id], function (err) {
+  const { id } = req.params;
+  const query = 'DELETE FROM Tags WHERE ID = ?';
+
+  db.run(query, [id], function (err) {
       if (err) {
-        res.status(500).json({ error: 'Fehler beim Löschen des Tags.' });
-        return;
+          console.error('Fehler beim Löschen des Tags:', err.message);
+          res.status(500).json({ error: 'Fehler beim Löschen des Tags.' });
+          return;
       }
-      res.json({ success: true });
-    });
+      if (this.changes === 0) {
+          res.status(404).json({ error: 'Tag nicht gefunden.' });
+      } else {
+          res.json({ success: true, message: `Tag mit ID ${id} erfolgreich gelöscht.` });
+      }
+  });
 });
 
-app.delete('/zielgruppe/:id', (req, res) => {
-    const { id } = req.params;
-    const query = 'DELETE FROM Zielgruppe WHERE ID = ?';
-  
-    db.run(query, [id], function (err) {
+app.delete('/zielgruppen/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Zielgruppe WHERE ID = ?';
+
+  db.run(query, [id], function (err) {
       if (err) {
-        res.status(500).json({ error: 'Fehler beim Löschen der Zielgruppe.' });
-        return;
+          console.error('Fehler beim Löschen der Zielgruppe:', err.message);
+          res.status(500).json({ error: 'Fehler beim Löschen der Zielgruppe.' });
+          return;
       }
-      res.json({ success: true });
-    });
+      if (this.changes === 0) {
+          res.status(404).json({ error: 'Zielgruppe nicht gefunden.' });
+      } else {
+          res.json({ success: true, message: `Zielgruppe mit ID ${id} erfolgreich gelöscht.` });
+      }
+  });
 });
   
 // Server starten
