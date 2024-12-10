@@ -8,6 +8,9 @@ const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = 3000;
+//const API_URL = 'http://130.149.222.214:3000';
+
+app.use(express.static(__dirname+'/public'))
 
 //Meilisearch:
 const meiliClient = new MeiliSearch({
@@ -31,15 +34,18 @@ const meiliIndex = meiliClient.index('angebote');
 })();
 
 // CORS-Middleware einbinden
+// Erlaubt Anfragen vom Angular-Frontend
 app.use(cors({
-    origin: 'http://localhost:4200' // Erlaubt nur Angular-Frontend
+  origin: 'http://130.149.222.214', // Die URL meines Frontends
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Erlaubte Methoden
+  credentials: true // Falls Cookies verwendet werden
 }));
 
 // Body parser middleware, um JSON zu verarbeiten
 app.use(bodyParser.json());
 
 // Verbindung zur SQLite-Datenbank herstellen
-const db = new sqlite3.Database('./ba_Kopie_final.db', (err) => {
+const db = new sqlite3.Database('/var/www/backend/ba_Kopie_final.db', (err) => {
     if (err) {
         console.error('Fehler beim Verbinden zur Datenbank:', err);
     } else {
@@ -51,6 +57,11 @@ const db = new sqlite3.Database('./ba_Kopie_final.db', (err) => {
 app.get('/', (req, res) => {
     res.send('Willkommen bei der REST API für Institutionen und Angebote!');
 });
+
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ message: 'Test erfolgreich' });
+});
+
 
 //Meilisearch:
 app.post('/meilisearch/sync', async (req, res) => {
