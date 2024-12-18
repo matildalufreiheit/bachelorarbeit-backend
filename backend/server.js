@@ -4,13 +4,19 @@ const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const { MeiliSearch } = require('meilisearch');
 const bcrypt = require('bcrypt');
-
+const https = require('node:https');
+const fs = require('node:fs');
 
 const app = express();
 const PORT = 3000;
 //const API_URL = 'http://130.149.222.214:3000';
 
-app.use(express.static(__dirname+'/public'))
+const privkeyLink = fs.readlinkSync('/etc/letsencrypt/live/vm021.qu.tu-berlin.de/privkey.pem')
+const fullchainLink = fs.readlinkSync('/etc/letsencrypt/live/vm021.qu.tu-berlin.de/fullchain.pem')
+const https_options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/vm021.qu.tu-berlin.de/' + privkeyLink),
+  cert: fs.readFileSync('/etc/letsencrypt/live/vm021.qu.tu-berlin.de/' + fullchainLink)
+}
 
 //Meilisearch:
 const meiliClient = new MeiliSearch({
@@ -36,7 +42,7 @@ const meiliIndex = meiliClient.index('angebote');
 // CORS-Middleware einbinden
 // Erlaubt Anfragen vom Angular-Frontend
 app.use(cors({
-  origin: 'http://130.149.222.214', // Die URL meines Frontends
+  origin: 'https://vm021.qu.tu-berlin.de', // Die URL meines Frontends
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Erlaubte Methoden
   credentials: true // Falls Cookies verwendet werden
 }));
@@ -55,8 +61,7 @@ const db = new sqlite3.Database('/var/www/backend/ba_Kopie_final.db', (err) => {
 
 // API-Routen
 app.get('/', (req, res) => {
-    res.send('Willkommen bei der REST API für Institutionen und Angebote!');
-});
+res.send('Willkommen bei der REST API für Institutionen und Angebote!');});
 
 app.get('/api/test', (req, res) => {
   res.status(200).json({ message: 'Test erfolgreich' });
@@ -662,6 +667,16 @@ app.delete('/zielgruppen/:id', (req, res) => {
 });
   
 // Server starten
+/*
 app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
 });
+*/
+
+https.createServer(https_options, app).listen(PORT, (error) => {
+  if(error) {
+    console.log('server error', error)
+  } else {
+    console.log(`Backend läuft auf Port ${PORT}`);
+  }
+})
