@@ -17,8 +17,8 @@ else
     //Meilisearch lokal starten:
     meiliClient = new MeiliSearch({
         host: 'http://localhost:7700',
-        // apiKey: 'bSppaUoyGpLKWXd24IRK3FU7fXxak7CeOR5Eu-bOIyw',   // MF Mac lokal
-        apiKey: 'yUseq7A-Cug6VjNIGytyZeOEGD5dseYiT7zmuag5oLs'       // Testgeraet lokal
+        apiKey: 'bSppaUoyGpLKWXd24IRK3FU7fXxak7CeOR5Eu-bOIyw',   // MF Mac lokal
+        //apiKey: 'yUseq7A-Cug6VjNIGytyZeOEGD5dseYiT7zmuag5oLs'       // Testgeraet lokal
     });
 }
 

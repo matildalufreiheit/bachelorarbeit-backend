@@ -6,7 +6,6 @@ const fs = require('node:fs');
 require('dotenv').config();
 
 // Routen
-const meiliIndex = require('./config/meiliclient')
 const angeboteRoutes = require('./routes/angebote.routes')
 const artenRoutes = require('./routes/arten.routes')
 const institutionenRoutes = require('./routes/institutionen.routes')

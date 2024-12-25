@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../config/db')
 const bcrypt = require('bcrypt')
 
-router.get('/benutzer', (req, res) => {
+router.get('/', (req, res) => {
     const query = 'SELECT ID, Benutzername FROM Benutzer';
     db.all(query, (err, rows) => {
         if (err) {
@@ -68,7 +68,7 @@ router.post('/login', (req, res) => {
 });
 
 // Benutzer löschen
-router.delete('/benutzer/:id', (req, res) => {
+router.delete('/:id', (req, res) => {
   const { id } = req.params;
 
   const query = `DELETE FROM Benutzer WHERE ID = ?`;
