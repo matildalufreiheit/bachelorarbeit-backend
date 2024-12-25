@@ -24,3 +24,7 @@ npm i
 
 •⁠  ⁠⁠ `ba_Kopie_final.db` ⁠ is sglite3-database containing all the data
 •⁠  ⁠⁠ `meilifiles` ⁠ conatains all the MeiliSearch data (see ⁠ `indexes` ⁠ and ⁠ `tasks` ⁠)
+
+## db scheme
+
+![db-scheme](./DB_Shema.png)

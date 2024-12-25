@@ -1,3 +1,8 @@
+<<<<<<< HEAD
 .DS_Store
 meilisearch
+=======
+meilisearch
+.DS_Store
+>>>>>>> 44332ba (gitignore updated)
 
