@@ -43,24 +43,34 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-    const { id } = req.params;
-    const query = `
-      SELECT Angebot.*, 
-             GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs, 
-             GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs
+  const { id } = req.params;
+  const query = `
+      SELECT 
+          Angebot.ID, 
+          Angebot.InstitutionID, 
+          Institution.Name AS Name, 
+          Institution.Beschreibung AS Beschreibung, 
+          Institution.URL AS url,
+          GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
+          GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
+          GROUP_CONCAT(DISTINCT Art.Art) AS Arten -- Verbindung zu Art.Art
       FROM Angebot
+      LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
       LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
       LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
+      LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
+      LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID -- Stelle sicher, dass die Verknüpfung korrekt ist
       WHERE Angebot.ID = ?
       GROUP BY Angebot.ID;
-    `;
-  
-    db.get(query, [id], (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: 'Fehler beim Abrufen des Angebots.' });
-      }
-      res.json({ data: row });
-    });
+
+  `;
+
+  db.get(query, [id], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Fehler beim Abrufen des Angebots.' });
+    }
+    res.json({ data: row });
+  });
 });
 
 router.post('/', (req, res) => {
@@ -157,14 +167,42 @@ router.post('/', (req, res) => {
                 institutionId,
                 angebotId,
               });
-            }
-          );
-        }
-      );
+            });
+        });
     });
   });
 
+router.delete('/:id', (req, res) => {
+  const id = req.params.id;
 
+  db.serialize(() => {
+    db.run('DELETE FROM Institution WHERE ID = ?', [id], function (errInst) {
+        if (errInst) {
+            console.error('Fehler beim Löschen der Institution:', errInst.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
+        }
 
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Institution nicht gefunden.' });
+        }
+
+        db.run('DELETE FROM Angebot WHERE ID = ?', [id], function (errAng) {
+          if (errAng) {
+              console.error('Fehler beim Löschen der Institution:', errAng.message);
+              return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
+          }
   
+          if (this.changes === 0) {
+              return res.status(404).json({ error: 'Angebot nicht gefunden.' });
+          }
+  
+          console.log(`Angebot mit ID ${id} erfolgreich gelöscht.`);
+        });
+
+        console.log(`Institution und Angebot mit ID ${id} erfolgreich gelöscht.`);
+        res.json({ success: true, message: `Institution und Angebot mit ID ${id} erfolgreich gelöscht.`});
+    });
+  });
+});
+
 module.exports = router;

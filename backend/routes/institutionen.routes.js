@@ -89,22 +89,36 @@ router.post('/', (req, res) => {
 //DELETE
 router.delete('/:id', (req, res) => {
     const id = req.params.id;
-
-    const query = `DELETE FROM Institution WHERE ID = ?`;
-    db.run(query, [id], function (err) {
-        if (err) {
-            console.error('Fehler beim Löschen der Institution:', err.message);
-            return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
-        }
-
-        if (this.changes === 0) {
-            return res.status(404).json({ error: 'Institution nicht gefunden.' });
-        }
-
-        console.log(`Institution mit ID ${id} erfolgreich gelöscht.`);
-        res.json({ success: true, message: `Institution mit ID ${id} erfolgreich gelöscht.` });
+  
+    db.serialize(() => {
+      db.run('DELETE FROM Institution WHERE ID = ?', [id], function (errInst) {
+          if (errInst) {
+              console.error('Fehler beim Löschen der Institution:', errInst.message);
+              return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
+          }
+  
+          if (this.changes === 0) {
+              return res.status(404).json({ error: 'Institution nicht gefunden.' });
+          }
+  
+          db.run('DELETE FROM Angebot WHERE ID = ?', [id], function (errAng) {
+            if (errAng) {
+                console.error('Fehler beim Löschen der Institution:', errAng.message);
+                return res.status(500).json({ error: 'Fehler beim Löschen der Institution.' });
+            }
+    
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Angebot nicht gefunden.' });
+            }
+    
+            console.log(`Angebot mit ID ${id} erfolgreich gelöscht.`);
+          });
+  
+          console.log(`Institution und Angebot mit ID ${id} erfolgreich gelöscht.`);
+          res.json({ success: true, message: `Institution und Angebot mit ID ${id} erfolgreich gelöscht.`});
+      });
     });
-});
+  });
 
 router.delete('/name/:instname', (req, res) => {
     const instname  = req.params.instname;
