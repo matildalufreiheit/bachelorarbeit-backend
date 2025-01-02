@@ -68,21 +68,28 @@ router.put('/:id', (req, res) => {
 
 //POST
 router.post('/', (req, res) => {
-    const { name, description, url } = req.body;
-  
-    if (!name || !description || !url) {
-      return res.status(400).json({ error: 'Name, Beschreibung und URL sind erforderlich.' });
+    const { name, description, url, name_en, description_en, url_en } = req.body;
+
+    // Überprüfen, ob alle erforderlichen Felder vorhanden sind
+    if (!name || !description || !url || !name_en || !description_en || !url_en) {
+        return res.status(400).json({ error: 'Alle Felder (deutsch und englisch) sind erforderlich.' });
     }
-  
-    const query = 'INSERT INTO Institution (Name, Beschreibung, URL) VALUES (?, ?, ?)';
-    db.run(query, [name, description, url], function (err) {
-      if (err) {
-        console.error('Fehler beim Erstellen der Institution:', err.message);
-        return res.status(500).json({ error: 'Fehler beim Erstellen der Institution.' });
-      }
-      res.json({ success: true, id: this.lastID });
+
+    const query = `
+        INSERT INTO Institution (Name, Beschreibung, URL, Name_EN, Description_EN, URL_EN) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const params = [name, description, url, name_en, description_en, url_en];
+
+    db.run(query, params, function (err) {
+        if (err) {
+            console.error('Fehler beim Erstellen der Institution:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Erstellen der Institution.' });
+        }
+        res.json({ success: true, id: this.lastID });
     });
 });
+
 
 
 

@@ -82,103 +82,103 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-    const { name, beschreibung, url, tags, zielgruppen, arten } = req.body;
-  
-    if (!name || !beschreibung || !url) {
-      return res.status(400).json({ error: 'Name, Beschreibung, und URL sind erforderlich.' });
-    }
-  
-    db.serialize(() => {
-      // Schritt 1: Institution einfügen
-      db.run(
-        `INSERT INTO Institution (Name, Beschreibung, URL) VALUES (?, ?, ?)`,
-        [name, beschreibung, url],
-        function (err) {
-          if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Fehler beim Hinzufügen der Institution.' });
-          }
-  
-          const institutionId = this.lastID;
-  
-          // Schritt 2: Angebot erstellen und Institution verknüpfen
-          db.run(
-            `INSERT INTO Angebot (InstitutionID) VALUES (?)`,
-            [institutionId],
-            function (err) {
-              if (err) {
-                console.error(err.message);
-                return res.status(500).json({ error: 'Fehler beim Hinzufügen des Angebots.' });
-              }
-  
-              const angebotId = this.lastID;
-  
-              // Schritt 3: Tags verknüpfen
-              if (tags && tags.length > 0) {
-                const tagInsertions = tags.map(
-                  (tagId) =>
-                    new Promise((resolve, reject) => {
-                      db.run(
-                        `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
-                        [angebotId, tagId],
-                        (err) => {
-                          if (err) reject(err);
-                          resolve();
-                        }
-                      );
-                    })
-                );
-  
-                Promise.all(tagInsertions).catch((err) => console.error(err.message));
-              }
-  
-              // Schritt 4: Zielgruppen verknüpfen
-              if (zielgruppen && zielgruppen.length > 0) {
-                const zielgruppenInsertions = zielgruppen.map(
-                  (zielgruppeId) =>
-                    new Promise((resolve, reject) => {
-                      db.run(
-                        `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
-                        [angebotId, zielgruppeId],
-                        (err) => {
-                          if (err) reject(err);
-                          resolve();
-                        }
-                      );
-                    })
-                );
-  
-                Promise.all(zielgruppenInsertions).catch((err) => console.error(err.message));
-              }
-  
-              // Schritt 5: Arten verknüpfen
-              if (arten && arten.length > 0) {
-                const artenInsertions = arten.map(
-                  (artId) =>
-                    new Promise((resolve, reject) => {
-                      db.run(
-                        `INSERT INTO Angebot_Art (AngebotID, ArtID) VALUES (?, ?)`,
-                        [angebotId, artId],
-                        (err) => {
-                          if (err) reject(err);
-                          resolve();
-                        }
-                      );
-                    })
-                );
-  
-                Promise.all(artenInsertions).catch((err) => console.error(err.message));
-              }
-  
-              res.status(201).json({
-                message: 'Angebot erfolgreich erstellt!',
-                institutionId,
-                angebotId,
-              });
+  const { name, beschreibung, url, name_en, beschreibung_en, url_en, tags, zielgruppen, arten } = req.body;
+
+  if (!name || !beschreibung || !url || !name_en || !beschreibung_en || !url_en) {
+    return res.status(400).json({ error: 'Alle Felder müssen ausgefüllt sein.' });
+  }
+
+  db.serialize(() => {
+    // Schritt 1: Institution einfügen
+    db.run(
+      `INSERT INTO Institution (Name, Beschreibung, URL, Name_EN, Description_EN, URL_EN) VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, beschreibung, url, name_en, beschreibung_en, url_en],
+      function (err) {
+        if (err) {
+          console.error('Fehler beim Hinzufügen der Institution:', err.message);
+          return res.status(500).json({ error: 'Fehler beim Hinzufügen der Institution.' });
+        }
+
+        const institutionId = this.lastID;
+
+        // Schritt 2: Angebot erstellen und Institution verknüpfen
+        db.run(
+          `INSERT INTO Angebot (InstitutionID) VALUES (?)`,
+          [institutionId],
+          function (err) {
+            if (err) {
+              console.error('Fehler beim Hinzufügen des Angebots:', err.message);
+              return res.status(500).json({ error: 'Fehler beim Hinzufügen des Angebots.' });
+            }
+
+            const angebotId = this.lastID;
+
+            // Schritt 3: Tags verknüpfen
+            if (tags && tags.length > 0) {
+              const tagInsertions = tags.map((tagId) =>
+                new Promise((resolve, reject) => {
+                  db.run(
+                    `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
+                    [angebotId, tagId],
+                    (err) => {
+                      if (err) reject(err);
+                      resolve();
+                    }
+                  );
+                })
+              );
+
+              Promise.all(tagInsertions).catch((err) => console.error(err.message));
+            }
+
+            // Schritt 4: Zielgruppen verknüpfen
+            if (zielgruppen && zielgruppen.length > 0) {
+              const zielgruppenInsertions = zielgruppen.map((zielgruppeId) =>
+                new Promise((resolve, reject) => {
+                  db.run(
+                    `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
+                    [angebotId, zielgruppeId],
+                    (err) => {
+                      if (err) reject(err);
+                      resolve();
+                    }
+                  );
+                })
+              );
+
+              Promise.all(zielgruppenInsertions).catch((err) => console.error(err.message));
+            }
+
+            // Schritt 5: Arten verknüpfen
+            if (arten && arten.length > 0) {
+              const artenInsertions = arten.map((artId) =>
+                new Promise((resolve, reject) => {
+                  db.run(
+                    `INSERT INTO Angebot_Art (AngebotID, ArtID) VALUES (?, ?)`,
+                    [angebotId, artId],
+                    (err) => {
+                      if (err) reject(err);
+                      resolve();
+                    }
+                  );
+                })
+              );
+
+              Promise.all(artenInsertions).catch((err) => console.error(err.message));
+            }
+
+            res.status(201).json({
+              message: 'Angebot erfolgreich erstellt!',
+              institutionId,
+              angebotId,
             });
-        });
-    });
+          }
+        );
+      }
+    );
   });
+});
+
 
 router.delete('/:id', (req, res) => {
   const id = req.params.id;

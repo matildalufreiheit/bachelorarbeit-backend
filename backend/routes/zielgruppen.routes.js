@@ -48,23 +48,24 @@ router.put('/:id', (req, res) => {
       }
   });
 });
-
   
 router.post('/', (req, res) => {
-    const { name } = req.body;
-  
-    if (!name) {
-      return res.status(400).json({ error: 'Zielgruppe darf nicht leer sein.' });
+    const { de, en } = req.body;
+
+    if (!de || !en) {
+        return res.status(400).json({ error: 'Sowohl der deutsche als auch der englische Name der Zielgruppe sind erforderlich.' });
     }
-  
-    const query = 'INSERT INTO Zielgruppe (Name) VALUES (?)';
-    db.run(query, [name], function (err) {
-      if (err) {
-        return res.status(500).json({ error: 'Fehler beim Hinzufügen der Zielgruppe.' });
-      }
-      res.json({ id: this.lastID, name });
+
+    const query = 'INSERT INTO Zielgruppe (Name, Zielgruppe_EN) VALUES (?, ?)';
+    db.run(query, [de, en], function (err) {
+        if (err) {
+            console.error('Fehler beim Hinzufügen der Zielgruppe:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Hinzufügen der Zielgruppe.' });
+        }
+        res.json({ success: true, id: this.lastID });
     });
 });
+
 
 router.delete('/:id', (req, res) => {
   const { id } = req.params;

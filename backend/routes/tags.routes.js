@@ -45,20 +45,22 @@ router.put('/:id', (req, res) => {
 
 // POST
 router.post('/', (req, res) => {
-    const { tag } = req.body;
-  
-    if (!tag) {
-      return res.status(400).json({ error: 'Tag darf nicht leer sein.' });
+    const { de, en } = req.body;
+
+    if (!de || !en) {
+        return res.status(400).json({ error: 'Sowohl der deutsche als auch der englische Name des Tags sind erforderlich.' });
     }
-  
-    const query = 'INSERT INTO Tags (Tag) VALUES (?)';
-    db.run(query, [tag], function (err) {
-      if (err) {
-        return res.status(500).json({ error: 'Fehler beim Hinzufügen des Tags.' });
-      }
-      res.json({ id: this.lastID, tag });
+
+    const query = 'INSERT INTO Tags (Tag, Tag_EN) VALUES (?, ?)';
+    db.run(query, [de, en], function (err) {
+        if (err) {
+            console.error('Fehler beim Hinzufügen des Tags:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Hinzufügen des Tags.' });
+        }
+        res.json({ success: true, id: this.lastID });
     });
 });
+
 
 
 
