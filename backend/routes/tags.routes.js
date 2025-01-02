@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db')
 
-// GET
+// GET Tags mit Sprachunterstützung
 router.get('/', (req, res) => {
-    const query = 'SELECT * FROM Tags WHERE Tag IS NOT NULL';
+    const lang = req.query.lang || 'de'; // Standard: Deutsch
+    const column = lang === 'en' ? 'Tag_EN' : 'Tag'; // Spalte basierend auf Sprache
+
+    const query = `SELECT ID, ${column} AS Tag FROM Tags WHERE ${column} IS NOT NULL`;
+
     db.all(query, (err, rows) => {
         if (err) {
             res.status(400).json({ error: err.message });
@@ -13,6 +17,7 @@ router.get('/', (req, res) => {
         res.json({ data: rows });
     });
 });
+
 
 // PUT
 router.put('/:id', (req, res) => {

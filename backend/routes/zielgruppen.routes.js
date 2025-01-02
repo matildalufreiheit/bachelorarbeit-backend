@@ -4,15 +4,27 @@ const db = require('../config/db')
 
 
 router.get('/', (req, res) => {
-    const query = 'SELECT * FROM Zielgruppe';
+    const lang = req.query.lang || 'de'; // Standard: Deutsch
+    const column = lang === 'en' ? 'Zielgruppe_EN' : 'Name'; // Spalte basierend auf Sprache
+
+    const query = `
+        SELECT ID, ${column} AS Name
+        FROM Zielgruppe
+        WHERE ${column} IS NOT NULL
+    `;
+
+    console.log(`Executing Query for language ${lang}: ${query}`); // Debugging-Log
+
     db.all(query, (err, rows) => {
         if (err) {
+            console.error('Database Error:', err.message); // Fehler ins Log schreiben
             res.status(400).json({ error: err.message });
             return;
         }
-        res.json({ data: rows });
+        res.json({ data: rows }); // Korrekte Daten zurückgeben
     });
 });
+
 
 router.put('/:id', (req, res) => {
   const { id } = req.params;

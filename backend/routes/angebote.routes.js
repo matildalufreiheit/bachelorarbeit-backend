@@ -7,40 +7,48 @@ const db = require('../config/db')
 
 //GET!
 router.get('/', (req, res) => {
-    const query = `
-        SELECT 
-            Angebot.ID, 
-            Angebot.InstitutionID, 
-            Institution.Name AS Name, 
-            Institution.Beschreibung AS Beschreibung, 
-            Institution.URL AS url,
-            GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
-            GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
-            GROUP_CONCAT(DISTINCT Art.Art) AS Arten -- Verbindung zu Art.Art
-        FROM Angebot
-        LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
-        LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
-        LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
-        LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
-        LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID -- Stelle sicher, dass die Verknüpfung korrekt ist
-        GROUP BY Angebot.ID;
+  const lang = req.query.lang || 'de'; // Standard: Deutsch
+  const nameColumn = lang === 'en' ? 'Institution.Name_EN' : 'Institution.Name';
+  const descriptionColumn = lang === 'en' ? 'Institution.Description_EN' : 'Institution.Beschreibung';
+  const urlColumn = lang === 'en' ? 'Institution.URL_EN' : 'Institution.URL';
 
-    `;
-    db.all(query, (err, rows) => {
-        if (err) {
-            console.error('Fehler beim Abrufen der Angebote:', err.message);
-            res.status(500).json({ error: 'Fehler beim Abrufen der Angebote.', details: err.message });
-            return;
-        }
-        // Konvertiere Ergebnisse in ein JSON-kompatibles Format
-        rows.forEach(row => {
-            row.TagIDs = row.TagIDs ? row.TagIDs.split(',').map(Number) : [];
-            row.ZielgruppenIDs = row.ZielgruppenIDs ? row.ZielgruppenIDs.split(',').map(Number) : [];
-            row.Arten = row.Arten ? row.Arten.split(',') : [];
-        });
-        res.json({ data: rows });
-    });
+  const query = `
+      SELECT 
+          Angebot.ID, 
+          Angebot.InstitutionID, 
+          ${nameColumn} AS Name, 
+          ${descriptionColumn} AS Beschreibung, 
+          ${urlColumn} AS url,
+          GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
+          GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
+          GROUP_CONCAT(DISTINCT Art.Art) AS Arten -- Verbindung zu Art.Art
+      FROM Angebot
+      LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
+      LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
+      LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
+      LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
+      LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID -- Stelle sicher, dass die Verknüpfung korrekt ist
+      GROUP BY Angebot.ID;
+  `;
+
+  console.log(`Executing Query for language ${lang}: ${query}`); // Debugging-Log
+
+  db.all(query, (err, rows) => {
+      if (err) {
+          console.error('Fehler beim Abrufen der Angebote:', err.message);
+          res.status(500).json({ error: 'Fehler beim Abrufen der Angebote.', details: err.message });
+          return;
+      }
+      // Konvertiere Ergebnisse in ein JSON-kompatibles Format
+      rows.forEach(row => {
+          row.TagIDs = row.TagIDs ? row.TagIDs.split(',').map(Number) : [];
+          row.ZielgruppenIDs = row.ZielgruppenIDs ? row.ZielgruppenIDs.split(',').map(Number) : [];
+          row.Arten = row.Arten ? row.Arten.split(',') : [];
+      });
+      res.json({ data: rows });
+  });
 });
+
 
 router.get('/:id', (req, res) => {
   const { id } = req.params;
