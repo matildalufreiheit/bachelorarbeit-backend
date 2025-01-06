@@ -5,49 +5,52 @@ const db = require('../config/db')
 
 router.get('/', (req, res) => {
     const lang = req.query.lang || 'de'; // Standard: Deutsch
-    const column = lang === 'en' ? 'Zielgruppe_EN' : 'Name'; // Spalte basierend auf Sprache
-
+    const column = lang === 'en' ? 'Zielgruppe_EN' : 'Name'; // Spaltenauswahl basierend auf Sprache
+  
     const query = `
-        SELECT ID, ${column} AS Name
-        FROM Zielgruppe
-        WHERE ${column} IS NOT NULL
+      SELECT 
+        ID, 
+        Name, 
+        Zielgruppe_EN, 
+        ${column} AS PreferredTag 
+      FROM Zielgruppe
+      WHERE ${column} IS NOT NULL
     `;
-
-    console.log(`Executing Query for language ${lang}: ${query}`); // Debugging-Log
-
+  
     db.all(query, (err, rows) => {
-        if (err) {
-            console.error('Database Error:', err.message); // Fehler ins Log schreiben
-            res.status(400).json({ error: err.message });
-            return;
-        }
-        res.json({ data: rows }); // Korrekte Daten zurückgeben
-    });
-});
-
-
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-
-  if (!name) {
-      return res.status(400).json({ error: 'Zielgruppe darf nicht leer sein.' });
-  }
-
-  const query = 'UPDATE Zielgruppe SET Name = ? WHERE ID = ?';
-  db.run(query, [name, id], function (err) {
       if (err) {
-          console.error('Fehler beim Aktualisieren der Zielgruppe:', err.message);
-          return res.status(500).json({ error: 'Fehler beim Aktualisieren der Zielgruppe.' });
+        console.error('Fehler beim Abrufen der Zielgruppen:', err.message);
+        res.status(500).json({ error: 'Fehler beim Abrufen der Zielgruppen.' });
+        return;
       }
-
-      if (this.changes === 0) {
-          res.status(404).json({ error: 'Zielgruppe nicht gefunden.' });
-      } else {
-          res.json({ success: true, message: `Zielgruppe mit ID ${id} erfolgreich aktualisiert.` });
-      }
+      console.log('Geladene Zielgruppen:', rows); // Debugging
+      res.json({ data: rows });
+    });
   });
-});
+  
+  router.put('/:id', (req, res) => {
+    const { id } = req.params;
+    const { de, en } = req.body;
+  
+    if (!de || !en) {
+      return res.status(400).json({ error: 'Sowohl der deutsche als auch der englische Name sind erforderlich.' });
+    }
+  
+    const query = 'UPDATE Zielgruppe SET Name = ?, Zielgruppe_EN = ? WHERE ID = ?';
+    db.run(query, [de, en, id], function (err) {
+      if (err) {
+        console.error('Fehler beim Aktualisieren der Zielgruppe:', err.message);
+        return res.status(500).json({ error: 'Fehler beim Aktualisieren der Zielgruppe.' });
+      }
+  
+      if (this.changes === 0) {
+        res.status(404).json({ error: 'Zielgruppe nicht gefunden.' });
+      } else {
+        res.json({ success: true, message: `Zielgruppe mit ID ${id} erfolgreich aktualisiert.` });
+      }
+    });
+  });
+  
   
 router.post('/', (req, res) => {
     const { de, en } = req.body;

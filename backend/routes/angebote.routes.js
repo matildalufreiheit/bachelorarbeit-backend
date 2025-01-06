@@ -11,6 +11,7 @@ router.get('/', (req, res) => {
   const nameColumn = lang === 'en' ? 'Institution.Name_EN' : 'Institution.Name';
   const descriptionColumn = lang === 'en' ? 'Institution.Description_EN' : 'Institution.Beschreibung';
   const urlColumn = lang === 'en' ? 'Institution.URL_EN' : 'Institution.URL';
+  const artColumn = lang === 'en' ? 'Art.Art_EN' : 'Art.Art'; // Spaltenauswahl für Arten
 
   const query = `
       SELECT 
@@ -21,7 +22,7 @@ router.get('/', (req, res) => {
           ${urlColumn} AS url,
           GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
           GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
-          GROUP_CONCAT(DISTINCT Art.Art) AS Arten -- Verbindung zu Art.Art
+          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten -- Verbindung zu Art.Art_EN oder Art.Art
       FROM Angebot
       LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
       LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
@@ -48,6 +49,7 @@ router.get('/', (req, res) => {
       res.json({ data: rows });
   });
 });
+
 
 
 router.get('/:id', (req, res) => {
