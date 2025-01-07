@@ -84,102 +84,101 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { name, beschreibung, url, name_en, beschreibung_en, url_en, tags, zielgruppen, arten } = req.body;
+  const {
+    InstitutionID,
+    Name,
+    Beschreibung,
+    url,
+    Name_en,
+    Beschreibung_en,
+    url_en,
+    TagIDs = [],
+    ZielgruppenIDs = [],
+    Arten = []
+  } = req.body;
 
-  if (!name || !beschreibung || !url || !name_en || !beschreibung_en || !url_en) {
-    return res.status(400).json({ error: 'Alle Felder müssen ausgefüllt sein.' });
+  if (!InstitutionID || !Name || !Beschreibung || !url || !Name_en || !Beschreibung_en || !url_en) {
+    return res.status(400).json({
+      error: 'Die Felder InstitutionID, Name, Beschreibung, url, Name_en, Beschreibung_en und url_en sind erforderlich.'
+    });
   }
 
   db.serialize(() => {
-    // Schritt 1: Institution einfügen
+    // Schritt 1: Angebot erstellen und Institution verknüpfen
     db.run(
-      `INSERT INTO Institution (Name, Beschreibung, URL, Name_EN, Description_EN, URL_EN) VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, beschreibung, url, name_en, beschreibung_en, url_en],
+      `INSERT INTO Angebot (InstitutionID, Name, Beschreibung, URL, Name_EN, Beschreibung_EN, URL_EN) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [InstitutionID, Name, Beschreibung, url, Name_en, Beschreibung_en, url_en],
       function (err) {
         if (err) {
-          console.error('Fehler beim Hinzufügen der Institution:', err.message);
-          return res.status(500).json({ error: 'Fehler beim Hinzufügen der Institution.' });
+          console.error('Fehler beim Hinzufügen des Angebots:', err.message);
+          return res.status(500).json({ error: 'Fehler beim Hinzufügen des Angebots.' });
         }
 
-        const institutionId = this.lastID;
+        const angebotId = this.lastID;
 
-        // Schritt 2: Angebot erstellen und Institution verknüpfen
-        db.run(
-          `INSERT INTO Angebot (InstitutionID) VALUES (?)`,
-          [institutionId],
-          function (err) {
-            if (err) {
-              console.error('Fehler beim Hinzufügen des Angebots:', err.message);
-              return res.status(500).json({ error: 'Fehler beim Hinzufügen des Angebots.' });
-            }
-
-            const angebotId = this.lastID;
-
-            // Schritt 3: Tags verknüpfen
-            if (tags && tags.length > 0) {
-              const tagInsertions = tags.map((tagId) =>
-                new Promise((resolve, reject) => {
-                  db.run(
-                    `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
-                    [angebotId, tagId],
-                    (err) => {
-                      if (err) reject(err);
-                      resolve();
-                    }
-                  );
-                })
+        // Schritt 2: Tags verknüpfen
+        if (TagIDs.length > 0) {
+          const tagInsertions = TagIDs.map((tagId) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
+                [angebotId, tagId],
+                (err) => {
+                  if (err) reject(err);
+                  resolve();
+                }
               );
+            })
+          );
 
-              Promise.all(tagInsertions).catch((err) => console.error(err.message));
-            }
+          Promise.all(tagInsertions).catch((err) => console.error(err.message));
+        }
 
-            // Schritt 4: Zielgruppen verknüpfen
-            if (zielgruppen && zielgruppen.length > 0) {
-              const zielgruppenInsertions = zielgruppen.map((zielgruppeId) =>
-                new Promise((resolve, reject) => {
-                  db.run(
-                    `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
-                    [angebotId, zielgruppeId],
-                    (err) => {
-                      if (err) reject(err);
-                      resolve();
-                    }
-                  );
-                })
+        // Schritt 3: Zielgruppen verknüpfen
+        if (ZielgruppenIDs.length > 0) {
+          const zielgruppenInsertions = ZielgruppenIDs.map((zielgruppeId) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
+                [angebotId, zielgruppeId],
+                (err) => {
+                  if (err) reject(err);
+                  resolve();
+                }
               );
+            })
+          );
 
-              Promise.all(zielgruppenInsertions).catch((err) => console.error(err.message));
-            }
+          Promise.all(zielgruppenInsertions).catch((err) => console.error(err.message));
+        }
 
-            // Schritt 5: Arten verknüpfen
-            if (arten && arten.length > 0) {
-              const artenInsertions = arten.map((artId) =>
-                new Promise((resolve, reject) => {
-                  db.run(
-                    `INSERT INTO Angebot_Art (AngebotID, ArtID) VALUES (?, ?)`,
-                    [angebotId, artId],
-                    (err) => {
-                      if (err) reject(err);
-                      resolve();
-                    }
-                  );
-                })
+        // Schritt 4: Arten verknüpfen
+        if (Arten.length > 0) {
+          const artenInsertions = Arten.map((art) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebot_Art (AngebotID, Art) VALUES (?, ?)`,
+                [angebotId, art],
+                (err) => {
+                  if (err) reject(err);
+                  resolve();
+                }
               );
+            })
+          );
 
-              Promise.all(artenInsertions).catch((err) => console.error(err.message));
-            }
+          Promise.all(artenInsertions).catch((err) => console.error(err.message));
+        }
 
-            res.status(201).json({
-              message: 'Angebot erfolgreich erstellt!',
-              institutionId,
-              angebotId,
-            });
-          }
-        );
+        res.status(201).json({
+          message: 'Angebot erfolgreich erstellt!',
+          angebotId,
+        });
       }
     );
   });
 });
+
 
 
 router.delete('/:id', (req, res) => {

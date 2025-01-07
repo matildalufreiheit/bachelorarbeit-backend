@@ -150,7 +150,6 @@ router.get('/benutzer', (req, res) => {
   
 
 //PUT
-
 router.put('/update-institution/:id', (req, res) => {
   const institutionId = req.params.id;
   const { name, beschreibung, url } = req.body;

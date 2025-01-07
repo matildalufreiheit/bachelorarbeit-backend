@@ -28,69 +28,79 @@ router.get('/:id', (req, res) => {
 
 //PUT
 router.put('/:id', (req, res) => {
-  const institutionId = req.params.id;
-  const { name, beschreibung, url } = req.body;
-
-  const fieldsToUpdate = [];
-  const values = [];
-
-  if (name) {
-      fieldsToUpdate.push('Name = ?');
-      values.push(name);
-  }
-  if (beschreibung) {
-      fieldsToUpdate.push('Beschreibung = ?');
-      values.push(beschreibung);
-  }
-  if (url) {
-      fieldsToUpdate.push('URL = ?');
-      values.push(url);
-  }
-
-  if (fieldsToUpdate.length === 0) {
-      return res.status(400).json({ error: 'Keine gültigen Felder zum Aktualisieren übergeben.' });
-  }
-
-  const updateQuery = `UPDATE Institution SET ${fieldsToUpdate.join(', ')} WHERE ID = ?`;
-  values.push(institutionId);
-
-  db.run(updateQuery, values, function (err) {
-      if (err) {
-          console.error('Fehler beim Aktualisieren der Institution:', err.message);
-          return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
-      }
-
-      res.status(200).json({ message: 'Institution erfolgreich aktualisiert!' });
-  });
-});
+    const institutionId = req.params.id;
+    const { Name, Beschreibung, url, Name_en, Beschreibung_en, url_en } = req.body;
+  
+    const fieldsToUpdate = [];
+    const values = [];
+  
+    if (Name) {
+        fieldsToUpdate.push('Name = ?');
+        values.push(Name);
+    }
+    if (Beschreibung) {
+        fieldsToUpdate.push('Beschreibung = ?');
+        values.push(Beschreibung);
+    }
+    if (url) {
+        fieldsToUpdate.push('URL = ?');
+        values.push(url);
+    }
+    if (Name_en) {
+        fieldsToUpdate.push('Name_EN = ?');
+        values.push(Name_en);
+    }
+    if (Beschreibung_en) {
+        fieldsToUpdate.push('Beschreibung_EN = ?');
+        values.push(Beschreibung_en);
+    }
+    if (url_en) {
+        fieldsToUpdate.push('URL_EN = ?');
+        values.push(url_en);
+    }
+  
+    if (fieldsToUpdate.length === 0) {
+        return res.status(400).json({ error: 'Keine gültigen Felder zum Aktualisieren übergeben.' });
+    }
+  
+    const updateQuery = `UPDATE Institution SET ${fieldsToUpdate.join(', ')} WHERE ID = ?`;
+    values.push(institutionId);
+  
+    db.run(updateQuery, values, function (err) {
+        if (err) {
+            console.error('Fehler beim Aktualisieren der Institution:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Aktualisieren der Institution.' });
+        }
+  
+        res.status(200).json({ message: 'Institution erfolgreich aktualisiert!' });
+    });
+  });  
 
 
 
 //POST
 router.post('/', (req, res) => {
-    const { name, description, url, name_en, description_en, url_en } = req.body;
+    const { Name, Beschreibung, url, Name_en, Beschreibung_en, url_en } = req.body;
 
     // Überprüfen, ob alle erforderlichen Felder vorhanden sind
-    if (!name || !description || !url || !name_en || !description_en || !url_en) {
+    if (!Name || !Beschreibung || !url || !Name_en || !Beschreibung_en || !url_en) {
         return res.status(400).json({ error: 'Alle Felder (deutsch und englisch) sind erforderlich.' });
     }
 
     const query = `
-        INSERT INTO Institution (Name, Beschreibung, URL, Name_EN, Description_EN, URL_EN) 
+        INSERT INTO Institution (Name, Beschreibung, URL, Name_EN, Beschreibung_EN, URL_EN) 
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const params = [name, description, url, name_en, description_en, url_en];
+    const params = [Name, Beschreibung, url, Name_en, Beschreibung_en, url_en];
 
     db.run(query, params, function (err) {
         if (err) {
             console.error('Fehler beim Erstellen der Institution:', err.message);
             return res.status(500).json({ error: 'Fehler beim Erstellen der Institution.' });
         }
-        res.json({ success: true, id: this.lastID });
+        res.status(201).json({ success: true, id: this.lastID });
     });
 });
-
-
 
 
 //DELETE
