@@ -27,4 +27,4 @@ npm i
 
 ## db scheme
 
-![db-scheme](./DB_Shema.png)
+![db-scheme](./DB_Shema.pdf)
