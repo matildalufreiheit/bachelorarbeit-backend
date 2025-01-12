@@ -304,17 +304,17 @@ router.put('/:id', (req, res) => {
   const {
     Name,
     Beschreibung,
-    url,
-    Name_en,
-    Beschreibung_en, 
-    url_en,
+    URL,
+    Name_EN,
+    Beschreibung_EN, 
+    URL_EN,
     Tags = [],
     Zielgruppen = [],
     Arten = []
   } = req.body;
 
   // Validierung: Alle erforderlichen Felder prüfen
-  if (!Name || !Beschreibung || !url || !Name_en || !Beschreibung_en || !url_en) {
+  if (!Name || !Beschreibung || !URL || !Name_EN || !Beschreibung_EN || !URL_EN) {
     return res.status(400).json({
       error: 'Alle Felder (Name, Beschreibung, url, Name_en, Beschreibung_en, url_en) sind erforderlich.',
     });
@@ -324,7 +324,7 @@ router.put('/:id', (req, res) => {
     // 1. Institution aktualisieren
     db.run(
       `UPDATE Institution SET Name = ?, Beschreibung = ?, URL = ?, Name_EN = ?, Description_EN = ?, URL_EN = ? WHERE ID = ?`,
-      [Name, Beschreibung, url, Name_en, Beschreibung_en, url_en, id],
+      [Name, Beschreibung, URL, Name_EN, Beschreibung_EN, URL_EN, id],
       function (err) {
         if (err) {
           console.error('Fehler beim Aktualisieren der Institution:', err.message);
@@ -338,37 +338,67 @@ router.put('/:id', (req, res) => {
         console.log(`Institution mit ID ${id} erfolgreich aktualisiert.`);
 
         // 2. Tags aktualisieren
-        const tagInsertions = Tags.map((tagId) =>
-          new Promise((resolve, reject) => {
-            db.run(
-              `INSERT OR IGNORE INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
-              [id, tagId],
-              (err) => (err ? reject(err) : resolve())
-            );
-          })
-        );
+        let tagInsertions = []; // Deklaration außerhalb des Callbacks
+
+        db.run(`DELETE FROM Angebot_Tags WHERE AngebotID = ?`, [id], function (err) {
+          if (err) {
+            console.error('Fehler beim Löschen der bestehenden Tags:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der bestehenden Tags.' });
+          }
+
+          // Nach dem Löschen der bestehenden Einträge, neue Einträge hinzufügen
+          tagInsertions = Tags.map((tagId) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebot_Tags (AngebotID, TagID) VALUES (?, ?)`,
+                [id, tagId],
+                (err) => (err ? reject(err) : resolve())
+              );
+            })
+          );
+        });
 
         // 3. Zielgruppen aktualisieren
-        const zielgruppenInsertions = Zielgruppen.map((zielgruppeId) =>
-          new Promise((resolve, reject) => {
-            db.run(
-              `INSERT OR IGNORE INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
-              [id, zielgruppeId],
-              (err) => (err ? reject(err) : resolve())
-            );
-          })
-        );
+        let zielgruppenInsertions = []; // Deklaration außerhalb des Callbacks
+
+        db.run(`DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?`, [id], function (err) {
+          if (err) {
+            console.error('Fehler beim Löschen der bestehenden Zielgruppen:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der bestehenden Zielgruppen.' });
+          }
+
+          // Nach dem Löschen der bestehenden Einträge, neue Einträge hinzufügen
+          zielgruppenInsertions = Zielgruppen.map((zielgruppeId) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebote_Zielgruppe (AngebotID, ZielgruppeID) VALUES (?, ?)`,
+                [id, zielgruppeId],
+                (err) => (err ? reject(err) : resolve())
+              );
+            })
+          );
+        });
 
         // 4. Arten aktualisieren
-        const artenInsertions = Arten.map((art) =>
-          new Promise((resolve, reject) => {
-            db.run(
-              `INSERT OR IGNORE INTO Angebot_Art (AngebotID, Art) VALUES (?, ?)`,
-              [id, art],
-              (err) => (err ? reject(err) : resolve())
-            );
-          })
-        );
+        let artenInsertions = []; // Deklaration außerhalb des Callbacks
+
+        db.run(`DELETE FROM Angebot_Art WHERE AngebotID = ?`, [id], function (err) {
+          if (err) {
+            console.error('Fehler beim Löschen der bestehenden Arten:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der bestehenden Arten.' });
+          }
+
+          // Neue Einträge einfügen
+          artenInsertions = Arten.map((art) =>
+            new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO Angebot_Art (AngebotID, ArtID) VALUES (?, ?)`,
+                [id, art],
+                (err) => (err ? reject(err) : resolve())
+              );
+            })
+          );
+        });
 
         // 5. Änderungen speichern
         Promise.all([...tagInsertions, ...zielgruppenInsertions, ...artenInsertions])
