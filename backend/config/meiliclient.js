@@ -32,7 +32,7 @@ SELECT
     Institution.URL AS url,
     GROUP_CONCAT(DISTINCT Tags.Tag) AS tags,
     GROUP_CONCAT(DISTINCT Zielgruppe.Name) AS zielgruppen,
-    GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS suchbegriffe -- Suchbegriffe hinzufügen
+    GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS suchbegriffe 
 FROM Angebot
 LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
 LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
