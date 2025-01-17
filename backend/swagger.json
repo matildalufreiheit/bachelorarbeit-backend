@@ -1,0 +1,1997 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Beratungssuche REST-API",
+    "description": "Backend der Beratungssuche TU Berlin.\n",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "email": "matildafreiheit@tu-berlin.de"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://virtserver.swaggerhub.com/bachelorarbeit-c90/Bachelorarbeit/1.0.0",
+      "description": "SwaggerHub API Auto Mocking"
+    },
+    {
+      "url": "https://vm021.qu.tu-berlin.de:3000",
+      "description": "VM TU Berlin"
+    },
+    {
+      "url": "https://vm021.qu.tu-berlin.de:3000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "angebote",
+      "description": "CRUD fuer angebote"
+    },
+    {
+      "name": "arten",
+      "description": "CRUD fuer arten"
+    },
+    {
+      "name": "institutionen",
+      "description": "CRUD fuer institutionen"
+    },
+    {
+      "name": "nm",
+      "description": "angebot_tags und angebot_zielgruppen"
+    },
+    {
+      "name": "search",
+      "description": "Suche mit meilisearch",
+      "externalDocs": {
+        "description": "Meilisearch docs",
+        "url": "https://www.meilisearch.com/docs/learn/self_hosted/getting_started_with_self_hosted_meilisearch"
+      }
+    },
+    {
+      "name": "user",
+      "description": "Benutzerverwaltung (Registrierung, Login)"
+    },
+    {
+      "name": "zielgruppen",
+      "description": "CRUD fuer zielgruppen"
+    },
+    {
+      "name": "tags",
+      "description": "CRUD fuer tags"
+    }
+  ],
+  "paths": {
+    "/angebote": {
+      "get": {
+        "tags": [
+          "angebote"
+        ],
+        "summary": "Finde alle Angebote",
+        "operationId": "getAllAngebote",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Sprache der Ergebnisse (de = Deutsch, en = Englisch).",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alle Angebote erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Angebot"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Angebote."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "angebote"
+        ],
+        "summary": "Neues Angebot erstellen",
+        "description": "Fügt ein neues Angebot hinzu.",
+        "operationId": "postAngebot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Angebot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Angebot erfolgreich erstellt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_201"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fehlende Felder oder ungültige Anfrage"
+          },
+          "500": {
+            "description": "Fehler beim Erstellen des Angebots."
+          }
+        }
+      }
+    },
+    "/angebote/{angebotId}": {
+      "get": {
+        "tags": [
+          "angebote"
+        ],
+        "summary": "Suche Angebot nach ID",
+        "description": "liefert ein Angebot zurueck",
+        "operationId": "getOneAngebot",
+        "parameters": [
+          {
+            "name": "angebotId",
+            "in": "path",
+            "description": "ID des Angebotes, nach dem gesucht wird",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Sprache der Ergebnisse (de = Deutsch, en = Englisch).",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Angebot gefunden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Angebot"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Angebot nicht gefunden"
+          },
+          "500": {
+            "description": "Fehler beim Abrufen des Angebots."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "angebote"
+        ],
+        "summary": "Angebot aktualisieren",
+        "description": "Aktualisiert die Details eines bestehenden Angebots.",
+        "operationId": "updateAngebot",
+        "parameters": [
+          {
+            "name": "angebotId",
+            "in": "path",
+            "description": "ID des Angebots",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Angebot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Angebot erfolgreich aktualisiert"
+          },
+          "400": {
+            "description": "Fehlende Felder oder ungültige Anfrage"
+          },
+          "404": {
+            "description": "Angebot nicht gefunden"
+          },
+          "500": {
+            "description": "Fehler beim Aktualisieren des Angebots."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "angebote"
+        ],
+        "summary": "Angebot löschen",
+        "description": "Löscht ein Angebot basierend auf seiner ID.",
+        "operationId": "deleteAngebot",
+        "parameters": [
+          {
+            "name": "angebotId",
+            "in": "path",
+            "description": "ID des Angebots",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Angebot erfolgreich gelöscht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Angebot nicht gefunden"
+          },
+          "500": {
+            "description": "Fehler beim Löschen des Angebots."
+          }
+        }
+      }
+    },
+    "/benutzer": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Liste aller Benutzer abrufen",
+        "operationId": "getAllBenutzer",
+        "responses": {
+          "200": {
+            "description": "Liste aller Benutzer erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_1"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "ID": 1,
+                      "Benutzername": "user1"
+                    },
+                    {
+                      "ID": 2,
+                      "Benutzername": "user2"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Benutzer."
+          }
+        }
+      }
+    },
+    "/benutzer/login": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Benutzer-Login",
+        "operationId": "createUser",
+        "requestBody": {
+          "description": "Nutzername und Passwort",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/benutzer_login_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Benutzer eingelogged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_2"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ungueltiger Benutzername oder Passwort."
+          },
+          "500": {
+            "description": "Fehler beim Abrufen des Angebots."
+          }
+        }
+      }
+    },
+    "/benutzer/register": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Registriere einen neuen Benutzer.",
+        "operationId": "registerUser",
+        "requestBody": {
+          "description": "neuer Nutzername und Passwort",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/benutzer_register_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_3"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Benutzername und Passwort sind erforderlich."
+          },
+          "409": {
+            "description": "Benutzername ist bereits vergeben."
+          },
+          "500": {
+            "description": "Benutzername und Passwort sind erforderlich."
+          }
+        }
+      }
+    },
+    "/benutzer/{id}": {
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Loescht Benutzer mit ID",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID des Benutzers, der geloescht werden soll",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Benutzer erfolgreich geloescht.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_4"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Benutzer nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Löschen des Benutzers."
+          }
+        }
+      }
+    },
+    "/arten": {
+      "get": {
+        "tags": [
+          "arten"
+        ],
+        "summary": "Finde alle Arten",
+        "description": "Gibt alle verfügbaren Arten zurück, optional in der angegebenen Sprache.",
+        "operationId": "getAllArten",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Sprache der Ergebnisse (de = Deutsch, en = Englisch).",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alle Arten erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_5"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Arten."
+          }
+        }
+      }
+    },
+    "/institutionen": {
+      "get": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Liste aller Institutionen abrufen",
+        "operationId": "getAllInstitutionen",
+        "responses": {
+          "200": {
+            "description": "Alle Institutionen erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_6"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "ID": 1,
+                      "Name": "Studieninfoservice"
+                    },
+                    {
+                      "ID": 2,
+                      "Name": "Antidiskriminierungsbeauftragte*r"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Institutionen."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Erzeuge eine neue Institution",
+        "operationId": "postInstitution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Institution"
+              },
+              "examples": {
+                "Antidiskriminierungsbeauftragter": {
+                  "summary": "Beispiel für eine Institution",
+                  "value": {
+                    "Name": "Antidiskriminierungsbeauftrage*r",
+                    "Beschreibung": "Die/der Antidiskriminierungsbeauftragte ist die Beschwerdestelle für Diskriminierungsfälle, und bietet vertrauliche Erst- und Verweisberatungen.",
+                    "URL": "https://www.tu.berlin/go137380/",
+                    "Name_EN": "Anti-discrimination officer",
+                    "Description_EN": "The anti-discrimination officer is the point of contact for complaints in cases of discrimination. They offer confidential initial advice and can refer you to other helpful services.",
+                    "URL_EN": "https://www.tu.berlin/en/go137380/"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Institution erfolgreich erstellt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_201_1"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Alle Felder (deutsch und englisch) sind erforderlich."
+          },
+          "500": {
+            "description": "Fehler beim Hinzufügen der Institution."
+          }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Alle Tags abrufen",
+        "description": "Gibt eine Liste aller Tags zurück, basierend auf der bevorzugten Sprache (Deutsch oder Englisch).",
+        "operationId": "getAllTags",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Sprache der Tags (de = Deutsch, en = Englisch).",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tags erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_7"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "ID": 1,
+                      "Tag": "Beratung",
+                      "Tag_EN": "Counseling",
+                      "PreferredTag": "Beratung"
+                    },
+                    {
+                      "ID": 2,
+                      "Tag": "Hilfe",
+                      "Tag_EN": "Help",
+                      "PreferredTag": "Hilfe"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Tags."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Neuen Tag erstellen",
+        "description": "Erstellt einen neuen Tag mit deutschen und englischen Namen.",
+        "operationId": "createTag",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/tags_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tag erfolgreich erstellt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_8"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sowohl deutscher als auch englischer Name sind erforderlich."
+          },
+          "500": {
+            "description": "Fehler beim Hinzufügen des Tags."
+          }
+        }
+      }
+    },
+    "/tags/{id}": {
+      "put": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Tag aktualisieren",
+        "description": "Aktualisiert den deutschen und englischen Namen eines vorhandenen Tags.",
+        "operationId": "updateTag",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID des Tags, der aktualisiert werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/tags_id_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tag erfolgreich aktualisiert",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_9"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sowohl deutscher als auch englischer Name sind erforderlich."
+          },
+          "404": {
+            "description": "Tag nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Aktualisieren des Tags."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Tag löschen",
+        "description": "Löscht einen Tag basierend auf seiner ID.",
+        "operationId": "deleteTag",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID des Tags, der gelöscht werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag erfolgreich gelöscht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_10"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tag nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Löschen des Tags."
+          }
+        }
+      }
+    },
+    "/zielgruppen": {
+      "get": {
+        "tags": [
+          "zielgruppen"
+        ],
+        "summary": "Alle Zielgruppen abrufen",
+        "description": "Gibt eine Liste aller Zielgruppen zurück, basierend auf der bevorzugten Sprache (Deutsch oder Englisch).",
+        "operationId": "getAllZielgruppen",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Sprache der Zielgruppen (de = Deutsch, en = Englisch).",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zielgruppen erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_11"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "ID": 1,
+                      "Name": "Studierende",
+                      "Zielgruppe_EN": "Students",
+                      "PreferredTag": "Studierende"
+                    },
+                    {
+                      "ID": 2,
+                      "Name": "Doktoranden",
+                      "Zielgruppe_EN": "PhD Candidates",
+                      "PreferredTag": "Doktoranden"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Zielgruppen."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "zielgruppen"
+        ],
+        "summary": "Neue Zielgruppe erstellen",
+        "description": "Erstellt eine neue Zielgruppe mit deutschen und englischen Namen.",
+        "operationId": "createZielgruppe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/zielgruppen_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Zielgruppe erfolgreich erstellt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_8"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sowohl der deutsche als auch der englische Name sind erforderlich."
+          },
+          "500": {
+            "description": "Fehler beim Hinzufügen der Zielgruppe."
+          }
+        }
+      }
+    },
+    "/zielgruppen/{id}": {
+      "put": {
+        "tags": [
+          "zielgruppen"
+        ],
+        "summary": "Zielgruppe aktualisieren",
+        "description": "Aktualisiert den deutschen und englischen Namen einer vorhandenen Zielgruppe.",
+        "operationId": "updateZielgruppe",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID der Zielgruppe, die aktualisiert werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/zielgruppen_id_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Zielgruppe erfolgreich aktualisiert",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_12"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sowohl der deutsche als auch der englische Name sind erforderlich."
+          },
+          "404": {
+            "description": "Zielgruppe nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Aktualisieren der Zielgruppe."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "zielgruppen"
+        ],
+        "summary": "Zielgruppe löschen",
+        "description": "Löscht eine Zielgruppe basierend auf ihrer ID.",
+        "operationId": "deleteZielgruppe",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID der Zielgruppe, die gelöscht werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zielgruppe erfolgreich gelöscht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_13"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Zielgruppe nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Löschen der Zielgruppe."
+          }
+        }
+      }
+    },
+    "/institutionen/{id}": {
+      "get": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Einzelne Institution abrufen",
+        "operationId": "getInstitutionById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID der Institution, die abgerufen werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institution erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_14"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Institution nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Institution."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Institution aktualisieren",
+        "operationId": "updateInstitution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID der Institution, die aktualisiert werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/institutionen_id_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Institution erfolgreich aktualisiert"
+          },
+          "400": {
+            "description": "Keine gültigen Felder zum Aktualisieren übergeben."
+          },
+          "500": {
+            "description": "Fehler beim Aktualisieren der Institution."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Institution löschen",
+        "operationId": "deleteInstitution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID der Institution, die gelöscht werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institution erfolgreich gelöscht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_15"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Institution nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Löschen der Institution."
+          }
+        }
+      }
+    },
+    "/institutionen/name/{instname}": {
+      "delete": {
+        "tags": [
+          "institutionen"
+        ],
+        "summary": "Institution nach Name löschen",
+        "operationId": "deleteInstitutionByName",
+        "parameters": [
+          {
+            "name": "instname",
+            "in": "path",
+            "description": "Name der Institution, die gelöscht werden soll.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institution erfolgreich gelöscht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_15"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Institution nicht gefunden."
+          },
+          "500": {
+            "description": "Fehler beim Löschen der Institution."
+          }
+        }
+      }
+    },
+    "/angebot_tags/{angebotId}": {
+      "get": {
+        "tags": [
+          "nm"
+        ],
+        "summary": "Tags für ein Angebot abrufen",
+        "description": "Gibt die Tags für ein bestimmtes Angebot zurück oder alle, wenn keine `angebotId` angegeben wird.",
+        "operationId": "getAngebotTags",
+        "parameters": [
+          {
+            "name": "angebotId",
+            "in": "path",
+            "description": "ID des Angebots, für das die Tags abgerufen werden sollen (optional).",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tags erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_16"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "AngebotID": 1,
+                      "TagID": 5
+                    },
+                    {
+                      "AngebotID": 1,
+                      "TagID": 8
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Tags."
+          }
+        }
+      }
+    },
+    "/angebot_zielgruppe/{angebotId}": {
+      "get": {
+        "tags": [
+          "nm"
+        ],
+        "summary": "Zielgruppen für ein Angebot abrufen",
+        "description": "Gibt die Zielgruppen für ein bestimmtes Angebot zurück oder alle, wenn keine `angebotId` angegeben wird.",
+        "operationId": "getAngebotZielgruppen",
+        "parameters": [
+          {
+            "name": "angebotId",
+            "in": "path",
+            "description": "ID des Angebots, für das die Zielgruppen abgerufen werden sollen (optional).",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zielgruppen erfolgreich abgerufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_17"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "AngebotID": 1,
+                      "ZielgruppeID": 3
+                    },
+                    {
+                      "AngebotID": 1,
+                      "ZielgruppeID": 7
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler beim Abrufen der Zielgruppen."
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Durchsuche die Meilisearch-Datenbank",
+        "description": "Führt eine Suche in der Meilisearch-Datenbank durch und gibt die Ergebnisse zurück.",
+        "operationId": "searchInMeili",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Der Suchstring, nach dem in der Datenbank gesucht werden soll. Wenn kein Suchstring angegeben ist, werden alle Ergebnisse zurückgegeben.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ergebnisse der Suche",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200_18"
+                },
+                "example": {
+                  "hits": [
+                    {
+                      "id": 1,
+                      "title": "Ein Beispieltitel",
+                      "description": "Eine Beschreibung des Ergebnisses"
+                    }
+                  ],
+                  "offset": 0,
+                  "limit": 20,
+                  "estimatedTotalHits": 100
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fehler bei der Suche",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_500"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Angebot": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "InstitutionID": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Beschreibung": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "TagIDs": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "ZielgruppenIDs": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "Arten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Online",
+                "Campus",
+                "Website",
+                "Telefon"
+              ]
+            }
+          }
+        },
+        "xml": {
+          "name": "Angebot"
+        }
+      },
+      "Zielgruppe": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          }
+        },
+        "xml": {
+          "name": "Zielgruppe"
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "benutzername": {
+            "type": "string"
+          },
+          "Passwort": {
+            "type": "string"
+          }
+        },
+        "xml": {
+          "name": "User"
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Tag": {
+            "type": "string"
+          }
+        },
+        "xml": {
+          "name": "Tag"
+        }
+      },
+      "Institution": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Beschreibung": {
+            "type": "string"
+          },
+          "URL": {
+            "type": "string"
+          },
+          "Name_EN": {
+            "type": "string"
+          },
+          "Description_EN": {
+            "type": "string"
+          },
+          "URL_EN": {
+            "type": "string"
+          }
+        },
+        "xml": {
+          "name": "Institution"
+        }
+      },
+      "inline_response_201": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "institutionId": {
+            "type": "integer"
+          },
+          "angebotId": {
+            "type": "integer"
+          }
+        }
+      },
+      "inline_response_200": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Angebot erfolgreich gelöscht."
+        }
+      },
+      "inline_response_200_1": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_1_data"
+            }
+          }
+        }
+      },
+      "benutzer_login_body": {
+        "type": "object",
+        "properties": {
+          "benutzername": {
+            "type": "string"
+          },
+          "passwort": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "benutzername": "usernametest",
+          "passwort": "safe1234"
+        }
+      },
+      "inline_response_200_2": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "benutzername": {
+            "type": "string"
+          },
+          "rolle": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "benutzername": "usernametest"
+        }
+      },
+      "benutzer_register_body": {
+        "type": "object",
+        "properties": {
+          "benutzername": {
+            "type": "string"
+          },
+          "passwort": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "benutzername": "newtestuser",
+          "passwort": "safe1234"
+        }
+      },
+      "inline_response_200_3": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "example": {
+          "success": true,
+          "id": 6
+        }
+      },
+      "inline_response_200_4": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Benutzer erfolgreich gelöscht."
+        }
+      },
+      "inline_response_200_5": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_5_data"
+            }
+          }
+        },
+        "example": {
+          "data": [
+            {
+              "ID": 4,
+              "Art": "Campus"
+            },
+            {
+              "ID": 2,
+              "Art": "Online"
+            },
+            {
+              "ID": 3,
+              "Art": "Telefon"
+            },
+            {
+              "ID": 1,
+              "Art": "Website"
+            }
+          ]
+        }
+      },
+      "inline_response_200_6": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_6_data"
+            }
+          }
+        }
+      },
+      "inline_response_201_1": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "example": {
+          "success": true,
+          "id": 42
+        }
+      },
+      "inline_response_200_7": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_7_data"
+            }
+          }
+        }
+      },
+      "tags_body": {
+        "type": "object",
+        "properties": {
+          "de": {
+            "type": "string",
+            "description": "Deutscher Name des Tags."
+          },
+          "en": {
+            "type": "string",
+            "description": "Englischer Name des Tags."
+          }
+        },
+        "example": {
+          "de": "Beratung",
+          "en": "Counseling"
+        }
+      },
+      "inline_response_200_8": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "example": {
+          "success": true,
+          "id": 5
+        }
+      },
+      "tags_id_body": {
+        "type": "object",
+        "properties": {
+          "de": {
+            "type": "string",
+            "description": "Neuer deutscher Name des Tags."
+          },
+          "en": {
+            "type": "string",
+            "description": "Neuer englischer Name des Tags."
+          }
+        },
+        "example": {
+          "de": "Neue Beratung",
+          "en": "New Counseling"
+        }
+      },
+      "inline_response_200_9": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Tag mit ID 1 erfolgreich aktualisiert."
+        }
+      },
+      "inline_response_200_10": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Tag mit ID 1 erfolgreich gelöscht."
+        }
+      },
+      "inline_response_200_11": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_11_data"
+            }
+          }
+        }
+      },
+      "zielgruppen_body": {
+        "type": "object",
+        "properties": {
+          "de": {
+            "type": "string",
+            "description": "Deutscher Name der Zielgruppe."
+          },
+          "en": {
+            "type": "string",
+            "description": "Englischer Name der Zielgruppe."
+          }
+        },
+        "example": {
+          "de": "Studierende",
+          "en": "Students"
+        }
+      },
+      "zielgruppen_id_body": {
+        "type": "object",
+        "properties": {
+          "de": {
+            "type": "string",
+            "description": "Neuer deutscher Name der Zielgruppe."
+          },
+          "en": {
+            "type": "string",
+            "description": "Neuer englischer Name der Zielgruppe."
+          }
+        },
+        "example": {
+          "de": "Neue Zielgruppe",
+          "en": "New Target Group"
+        }
+      },
+      "inline_response_200_12": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Zielgruppe mit ID 1 erfolgreich aktualisiert."
+        }
+      },
+      "inline_response_200_13": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Zielgruppe mit ID 1 erfolgreich gelöscht."
+        }
+      },
+      "inline_response_200_14": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/inline_response_200_6_data"
+          }
+        },
+        "example": {
+          "data": {
+            "ID": 1,
+            "Name": "Studieninfoservice"
+          }
+        }
+      },
+      "institutionen_id_body": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "type": "string"
+          },
+          "Beschreibung": {
+            "type": "string"
+          },
+          "URL": {
+            "type": "string"
+          },
+          "Name_EN": {
+            "type": "string"
+          },
+          "Beschreibung_EN": {
+            "type": "string"
+          },
+          "URL_EN": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "Name": "Aktualisierter Name",
+          "Beschreibung": "Aktualisierte Beschreibung",
+          "URL": "https://example.com",
+          "Name_EN": "Updated Name",
+          "Beschreibung_EN": "Updated Description",
+          "URL_EN": "https://example.com/en"
+        }
+      },
+      "inline_response_200_15": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "success": true,
+          "message": "Institution erfolgreich gelöscht."
+        }
+      },
+      "inline_response_200_16": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_16_data"
+            }
+          }
+        }
+      },
+      "inline_response_200_17": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/inline_response_200_17_data"
+            }
+          }
+        }
+      },
+      "inline_response_200_18": {
+        "type": "object",
+        "properties": {
+          "hits": {
+            "type": "array",
+            "description": "Liste der Suchergebnisse.",
+            "items": {
+              "type": "object",
+              "description": "Ein einzelnes Suchergebnis."
+            }
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Der Startpunkt der Ergebnisse."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximale Anzahl der Ergebnisse, die zurückgegeben werden."
+          },
+          "estimatedTotalHits": {
+            "type": "integer",
+            "description": "Geschätzte Gesamtanzahl der Treffer."
+          }
+        }
+      },
+      "inline_response_500": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "error": "Fehler bei der Suche."
+        }
+      },
+      "inline_response_200_1_data": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Benutzername": {
+            "type": "string"
+          }
+        }
+      },
+      "inline_response_200_5_data": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Art": {
+            "type": "string",
+            "enum": [
+              "Online",
+              "Campus",
+              "Website",
+              "Telefon"
+            ]
+          }
+        }
+      },
+      "inline_response_200_6_data": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          }
+        }
+      },
+      "inline_response_200_7_data": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Tag": {
+            "type": "string",
+            "description": "Deutscher Name des Tags."
+          },
+          "Tag_EN": {
+            "type": "string",
+            "description": "Englischer Name des Tags."
+          },
+          "PreferredTag": {
+            "type": "string",
+            "description": "Bevorzugte Tag-Spalte basierend auf der angegebenen Sprache."
+          }
+        }
+      },
+      "inline_response_200_11_data": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string",
+            "description": "Deutscher Name der Zielgruppe."
+          },
+          "Zielgruppe_EN": {
+            "type": "string",
+            "description": "Englischer Name der Zielgruppe."
+          },
+          "PreferredTag": {
+            "type": "string",
+            "description": "Bevorzugte Spalte basierend auf der angegebenen Sprache."
+          }
+        }
+      },
+      "inline_response_200_16_data": {
+        "type": "object",
+        "properties": {
+          "AngebotID": {
+            "type": "integer"
+          },
+          "TagID": {
+            "type": "integer"
+          }
+        }
+      },
+      "inline_response_200_17_data": {
+        "type": "object",
+        "properties": {
+          "AngebotID": {
+            "type": "integer"
+          },
+          "ZielgruppeID": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "Angebot": {
+        "description": "neues Angebot, das gespeichert werden soll",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Angebot"
+            }
+          }
+        }
+      },
+      "Benutzer": {
+        "description": "neuer Admin-Benutzer",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        }
+      },
+      "Tag": {
+        "description": "neuer Tag, der gespeichert werden soll",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          }
+        }
+      },
+      "Zielgruppe": {
+        "description": "neue Zielgruppe, die gespeichert werden soll",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Zielgruppe"
+            }
+          }
+        }
+      },
+      "Institution": {
+        "description": "neue Institution, die gespeichert werden soll",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Institution"
+            }
+          }
+        }
+      }
+    }
+  }
+}

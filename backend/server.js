@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const https = require('node:https');
 const fs = require('node:fs');
 require('dotenv').config();
+const swaggerUi = require('swagger-ui-express');
 
 // Routen
 const angeboteRoutes = require('./routes/angebote.routes')
@@ -14,6 +15,7 @@ const searchRoutes = require('./routes/search.routes')
 const tagsRoutes = require('./routes/tags.routes')
 const userRoutes = require('./routes/user.routes')
 const zielgruppenRoutes = require('./routes/zielgruppen.routes')
+const swaggerDocument = require('./swagger.json');
 
 const app = express();
 const PORT = 3000;
@@ -30,6 +32,7 @@ app.use('/nm', nmRoutes);
 app.use('/meilisearch', searchRoutes)
 app.use('/tags', tagsRoutes);
 app.use('/zielgruppen', zielgruppenRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 if(process.env.NODE_ENV=='production') 
 {
