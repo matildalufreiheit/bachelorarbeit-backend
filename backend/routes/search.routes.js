@@ -11,6 +11,18 @@ router.get('/search', async (req, res) => {
         });
         console.log('meilisearch results : ', results)
         
+        if (results.hits.length === 0) {
+            // Kein Ergebnis -> Standardangebot zurückgeben
+            const defaultOffer = {
+                id: '6',
+                name: 'Allgemeine Studienberatung',
+                url: 'https://www.tu.berlin/go2726/',
+            };
+            return res.json({
+                hits: [defaultOffer], // Das Standardangebot in einem Trefferformat
+                totalHits: 1, // Zeigt an, dass ein Treffer (das Standardangebot) geliefert wurde
+            });
+        }
         res.json(results);
     } catch (error) {
         console.error('Fehler bei der Suche:', error);

@@ -41,8 +41,8 @@ LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
 LEFT JOIN Zielgruppe ON Angebote_Zielgruppe.ZielgruppeID = Zielgruppe.ID
 LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
 LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID
-LEFT JOIN Angebot_Suchbegriffe ON Angebot.ID = Angebot_Suchbegriffe.AngebotID -- Verbindungstabelle
-LEFT JOIN Suchbegriffe ON Angebot_Suchbegriffe.SuchbegriffID = Suchbegriffe.ID -- Suchbegriffe
+LEFT JOIN Angebot_Suchbegriffe ON Angebot.ID = Angebot_Suchbegriffe.AngebotID 
+LEFT JOIN Suchbegriffe ON Angebot_Suchbegriffe.SuchbegriffID = Suchbegriffe.ID 
 GROUP BY Angebot.ID;
 `;
 
