@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
           ${urlColumn} AS url,
           GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
           GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
-          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten -- Verbindung zu Art.Art_EN oder Art.Art
+          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten, -- Verbindung zu Art.Art_EN oder Art.Art
           GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS Suchbegriffe -- NEU: Suchbegriffe
 
       FROM Angebot
