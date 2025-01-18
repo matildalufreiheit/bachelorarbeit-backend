@@ -23,12 +23,16 @@ router.get('/', (req, res) => {
           GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
           GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
           GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten -- Verbindung zu Art.Art_EN oder Art.Art
+          GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS Suchbegriffe -- NEU: Suchbegriffe
+
       FROM Angebot
       LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
       LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
       LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
       LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
       LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID -- Stelle sicher, dass die Verknüpfung korrekt ist
+      LEFT JOIN Angebot_Suchbegriffe ON Angebot.ID = Angebot_Suchbegriffe.AngebotID -- NEU
+      LEFT JOIN Suchbegriffe ON Angebot_Suchbegriffe.SuchbegriffID = Suchbegriffe.ID -- NEU
       GROUP BY Angebot.ID;
   `;
 
@@ -45,6 +49,7 @@ router.get('/', (req, res) => {
           row.TagIDs = row.TagIDs ? row.TagIDs.split(',').map(Number) : [];
           row.ZielgruppenIDs = row.ZielgruppenIDs ? row.ZielgruppenIDs.split(',').map(Number) : [];
           row.Arten = row.Arten ? row.Arten.split(',') : [];
+          row.Suchbegriffe = row.Suchbegriffe ? row.Suchbegriffe.split(',') : []; // NEU
       });
       res.json({ data: rows });
   });
@@ -69,13 +74,16 @@ router.get('/:id', (req, res) => {
           ${urlColumn} AS url,
           GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
           GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
-          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten
+          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten,
+          GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS Suchbegriffe
       FROM Angebot
       LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
       LEFT JOIN Angebot_Tags ON Angebot.ID = Angebot_Tags.AngebotID
       LEFT JOIN Angebote_Zielgruppe ON Angebot.ID = Angebote_Zielgruppe.AngebotID
       LEFT JOIN Angebot_Art ON Angebot.ID = Angebot_Art.AngebotID
       LEFT JOIN Art ON Angebot_Art.ArtID = Art.ID
+      LEFT JOIN Angebot_Suchbegriffe ON Angebot.ID = Angebot_Suchbegriffe.AngebotID -- NEU
+      LEFT JOIN Suchbegriffe ON Angebot_Suchbegriffe.SuchbegriffID = Suchbegriffe.ID -- NEU
       WHERE Angebot.ID = ?
       GROUP BY Angebot.ID;
   `;
@@ -96,13 +104,13 @@ router.get('/:id', (req, res) => {
     row.TagIDs = row.TagIDs ? row.TagIDs.split(',').map(Number) : [];
     row.ZielgruppenIDs = row.ZielgruppenIDs ? row.ZielgruppenIDs.split(',').map(Number) : [];
     row.Arten = row.Arten ? row.Arten.split(',') : [];
-
+    row.Suchbegriffe = row.Suchbegriffe ? row.Suchbegriffe.split(',') : []; // NEU
     res.json({ data: row });
   });
 });
 
 router.post('/', (req, res) => {
-  const { name, beschreibung, url, name_en, beschreibung_en, url_en, tags, zielgruppen, arten } = req.body;
+  const { name, beschreibung, url, name_en, beschreibung_en, url_en, tags, zielgruppen, arten, suchebegriffe } = req.body;
   if (!name || !beschreibung || !url || !name_en || !beschreibung_en || !url_en) {
     return res.status(400).json({ error: 'Alle Felder müssen ausgefüllt sein.' });
   }
@@ -177,6 +185,75 @@ router.post('/', (req, res) => {
               );
               Promise.all(artenInsertions).catch((err) => console.error(err.message));
             }
+            // Schritt 6: Suchbegriffe verknüpfen
+            if (suchebegriffe && suchebegriffe.length > 0) {
+              const begriffe = suchebegriffe.map((begriff) => begriff.trim()); // Begriffe trimmen
+              console.log('Suchbegriffe, die verarbeitet werden:', begriffe); // Debugging
+
+            
+              const suchbegriffPromises = begriffe.map(
+                (begriff) =>
+                  new Promise((resolve, reject) => {
+                    // Füge den Begriff ein, falls er noch nicht existiert
+                    db.run(
+                      `INSERT OR IGNORE INTO Suchbegriffe (Begriff) VALUES (?)`,
+                      [begriff],
+                      function (err) {
+                        if (err) {
+                          console.error('Fehler beim Einfügen in Suchbegriffe:', err.message);
+                          reject(err); // Fehler zurückgeben
+                        } else {
+                          console.log(`Begriff eingefügt oder existiert bereits: ${begriff}`);
+            
+                          // Hole die ID des Begriffs
+                          db.get(
+                            `SELECT ID FROM Suchbegriffe WHERE Begriff = ?`,
+                            [begriff],
+                            (err, row) => {
+                              if (err) {
+                                console.error('Fehler beim Abrufen der Suchbegriff-ID:', err.message);
+                                reject(err); // Fehler zurückgeben
+                              } else {
+                                const suchbegriffId = row.ID;
+                                console.log('Gefundene Suchbegriff-ID:', suchbegriffId); // Debugging
+
+                                // Füge die Verknüpfung in Angebot_Suchbegriffe ein
+                                db.run(
+                                  `INSERT INTO Angebot_Suchbegriffe (AngebotID, SuchbegriffID) VALUES (?, ?)`,
+                                  [angebotId, suchbegriffId],
+                                  (err) => {
+                                    if (err) {
+                                      console.error(
+                                        'Fehler beim Verknüpfen von Angebot und Suchbegriff:',
+                                        err.message
+                                      );
+                                      reject(err); // Fehler zurückgeben
+                                    } else {
+                                      console.log(
+                                        `Verknüpfung erstellt: AngebotID ${angebotId}, SuchbegriffID ${suchbegriffId}`
+                                      );
+                                      resolve();
+                                    }
+                                  }
+                                );
+                              }
+                            }
+                          );
+                        }
+                      }
+                    );
+                  })
+              );
+            
+              Promise.all(suchbegriffPromises)
+                .then(() => {
+                  console.log('Alle Suchbegriffe erfolgreich verarbeitet.');
+                })
+                .catch((err) => {
+                  console.error('Fehler beim Verarbeiten der Suchbegriffe:', err.message);
+                });
+            }
+            
             res.status(201).json({
               message: 'Angebot erfolgreich erstellt!',
               institutionId,
@@ -201,7 +278,8 @@ router.put('/:id', (req, res) => {
     URL_EN,
     Tags = [],
     Zielgruppen = [],
-    Arten = []
+    Arten = [],
+    Suchebegriffe = []
   } = req.body;
 
   // Validierung: Alle erforderlichen Felder prüfen
@@ -290,6 +368,77 @@ router.put('/:id', (req, res) => {
             })
           );
         });
+        db.run(`DELETE FROM Angebot_Suchbegriffe WHERE AngebotID = ?`, [id], function (err) {
+          if (err) {
+            console.error('Fehler beim Löschen der bestehenden Suchbegriffe:', err.message);
+            return res.status(500).json({ error: 'Fehler beim Löschen der bestehenden Suchbegriffe.' });
+          }
+        
+          if (Suchebegriffe && Suchebegriffe.length > 0) {
+            const begriffe = Suchebegriffe.map((begriff) => begriff.trim()); // Begriffe trimmen
+        
+            const suchbegriffInsertions = begriffe.map(
+              (begriff) =>
+                new Promise((resolve, reject) => {
+                  // Füge den Begriff ein, falls er noch nicht existiert
+                  db.run(
+                    `INSERT OR IGNORE INTO Suchbegriffe (Begriff) VALUES (?)`,
+                    [begriff],
+                    function (err) {
+                      if (err) {
+                        console.error('Fehler beim Einfügen in Suchbegriffe:', err.message);
+                        reject(err);
+                      } else {
+                        console.log(`Begriff eingefügt oder existiert bereits: ${begriff}`);
+        
+                        // Hole die ID des Begriffs
+                        db.get(
+                          `SELECT ID FROM Suchbegriffe WHERE Begriff = ?`,
+                          [begriff],
+                          (err, row) => {
+                            if (err) {
+                              console.error('Fehler beim Abrufen der Suchbegriff-ID:', err.message);
+                              reject(err);
+                            } else {
+                              const suchbegriffId = row.ID;
+        
+                              // Füge die Verknüpfung in Angebot_Suchbegriffe ein
+                              db.run(
+                                `INSERT INTO Angebot_Suchbegriffe (AngebotID, SuchbegriffID) VALUES (?, ?)`,
+                                [id, suchbegriffId],
+                                (err) => {
+                                  if (err) {
+                                    console.error(
+                                      'Fehler beim Verknüpfen von Angebot und Suchbegriff:',
+                                      err.message
+                                    );
+                                    reject(err);
+                                  } else {
+                                    console.log(
+                                      `Verknüpfung erstellt: AngebotID ${id}, SuchbegriffID ${suchbegriffId}`
+                                    );
+                                    resolve();
+                                  }
+                                }
+                              );
+                            }
+                          }
+                        );
+                      }
+                    }
+                  );
+                })
+            );
+        
+            Promise.all(suchbegriffInsertions)
+              .then(() => {
+                console.log('Alle Suchbegriffe erfolgreich aktualisiert.');
+              })
+              .catch((err) => {
+                console.error('Fehler beim Aktualisieren der Suchbegriffe:', err.message);
+              });
+          }
+        });        
 
         // 5. Änderungen speichern
         Promise.all([...tagInsertions, ...zielgruppenInsertions, ...artenInsertions])
