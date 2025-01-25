@@ -23,8 +23,8 @@ router.get('/', (req, res) => {
           ${urlColumn} AS url,
           GROUP_CONCAT(DISTINCT Angebot_Tags.TagID) AS TagIDs,
           GROUP_CONCAT(DISTINCT Angebote_Zielgruppe.ZielgruppeID) AS ZielgruppenIDs,
-          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten, -- Verbindung zu Art.Art_EN oder Art.Art
-          GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS Suchbegriffe -- NEU: Suchbegriffe
+          GROUP_CONCAT(DISTINCT ${artColumn}) AS Arten, 
+          GROUP_CONCAT(DISTINCT Suchbegriffe.Begriff) AS Suchbegriffe 
 
       FROM Angebot
       LEFT JOIN Institution ON Angebot.InstitutionID = Institution.ID
@@ -436,6 +436,7 @@ router.put('/:id', (req, res) => {
         
             Promise.all(suchbegriffInsertions)
               .then(() => {
+                intiMeiliclient();
                 console.log('Alle Suchbegriffe erfolgreich aktualisiert.');
               })
               .catch((err) => {
