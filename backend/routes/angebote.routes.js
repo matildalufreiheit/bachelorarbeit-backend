@@ -482,6 +482,11 @@ router.delete('/:id', (req, res) => {
           console.log(`Angebot mit ID ${id} erfolgreich gelöscht.`);
         });
 
+        db.run('DELETE FROM Angebot_Art WHERE AngebotID = ?', [id], () => {});
+        db.run('DELETE FROM Angebot_Suchbegriffe WHERE AngebotID = ?', [id], () => {});
+        db.run('DELETE FROM Angebot_Tags WHERE AngebotID = ?', [id], () => {});
+        db.run('DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?', [id], () => {});
+
         console.log(`Institution und Angebot mit ID ${id} erfolgreich gelöscht.`);
         res.json({ success: true, message: `Institution und Angebot mit ID ${id} erfolgreich gelöscht.`});
     });

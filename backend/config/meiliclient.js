@@ -67,6 +67,7 @@ db.all(query, async (err, rows) => {
 
     console.log('documents : ', this.documents);
     
+    await meiliClient.index('angebote').deleteAllDocuments()
     const response = await meiliClient.index('angebote').addDocuments(this.documents).then( res => console.log('Response from meili : ', res))
     console.log('Response from MeiliSearch:', response);
 
