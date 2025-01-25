@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const meiliIndex = require('../config/meiliclient')
+const { meiliIndex } = require('../config/meiliclient')
 
 
 router.get('/search', async (req, res) => {

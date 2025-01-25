@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db')
+const { intiMeiliclient } = require('../config/meiliclient')
 
 
 // CRUD-Operationen für Angebote
@@ -127,6 +128,7 @@ router.post('/', (req, res) => {
         }
 
         const institutionId = this.lastID;
+        console.log('institutionsID: ', institutionId)
         // Schritt 2: Angebot erstellen und Institution verknüpfen
         db.run(
           `INSERT INTO Angebot (InstitutionID) VALUES (?)`,
@@ -137,6 +139,7 @@ router.post('/', (req, res) => {
               return res.status(500).json({ error: 'Fehler beim Hinzufügen des Angebots.' });
             }
             const angebotId = this.lastID;
+            console.log('angebotID: ', angebotId)
             // Schritt 3: Tags verknüpfen
             if (tags && tags.length > 0) {
               const tagInsertions = tags.map((tagId) =>
@@ -247,6 +250,7 @@ router.post('/', (req, res) => {
             
               Promise.all(suchbegriffPromises)
                 .then(() => {
+                  intiMeiliclient();
                   console.log('Alle Suchbegriffe erfolgreich verarbeitet.');
                 })
                 .catch((err) => {
@@ -487,6 +491,7 @@ router.delete('/:id', (req, res) => {
         db.run('DELETE FROM Angebot_Tags WHERE AngebotID = ?', [id], () => {});
         db.run('DELETE FROM Angebote_Zielgruppe WHERE AngebotID = ?', [id], () => {});
 
+        intiMeiliclient();
         console.log(`Institution und Angebot mit ID ${id} erfolgreich gelöscht.`);
         res.json({ success: true, message: `Institution und Angebot mit ID ${id} erfolgreich gelöscht.`});
     });

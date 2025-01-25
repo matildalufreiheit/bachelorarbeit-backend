@@ -46,40 +46,43 @@ LEFT JOIN Suchbegriffe ON Angebot_Suchbegriffe.SuchbegriffID = Suchbegriffe.ID
 GROUP BY Angebot.ID;
 `;
 
+const intiMeiliclient = () => {
+    db.all(query, async (err, rows) => {
+        if (err) {
+            console.error('Fehler beim Abrufen der Angebote für MeiliSearch:', err.message);
+            res.status(500).json({ error: 'Fehler beim Abrufen der Angebote.', details: err.message });
+            return;
+        }
 
-db.all(query, async (err, rows) => {
-    if (err) {
-        console.error('Fehler beim Abrufen der Angebote für MeiliSearch:', err.message);
-        res.status(500).json({ error: 'Fehler beim Abrufen der Angebote.', details: err.message });
-        return;
-    }
+        this.documents = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            beschreibung: row.beschreibung,
+            art: row.art ? row.art.split(', ') : [],
+            url: row.url,
+            tags: row.tags ? row.tags.split(', ') : [],
+            zielgruppen: row.zielgruppen ? row.zielgruppen.split(', ') : [],
+            suchbegriffe: row.suchbegriffe ? row.suchbegriffe.split(', ') : [] // Suchbegriffe einfügen
+        }));
 
-    this.documents = rows.map(row => ({
-        id: row.id,
-        name: row.name,
-        beschreibung: row.beschreibung,
-        art: row.art ? row.art.split(', ') : [],
-        url: row.url,
-        tags: row.tags ? row.tags.split(', ') : [],
-        zielgruppen: row.zielgruppen ? row.zielgruppen.split(', ') : [],
-        suchbegriffe: row.suchbegriffe ? row.suchbegriffe.split(', ') : [] // Suchbegriffe einfügen
-    }));
+        console.log('documents : ', this.documents);
+        
+        await meiliClient.index('angebote').deleteAllDocuments()
+        const response = await meiliClient.index('angebote').addDocuments(this.documents).then( res => console.log('Response from meili : ', res))
+        console.log('Response from MeiliSearch:', response);
 
-    console.log('documents : ', this.documents);
-    
-    await meiliClient.index('angebote').deleteAllDocuments()
-    const response = await meiliClient.index('angebote').addDocuments(this.documents).then( res => console.log('Response from meili : ', res))
-    console.log('Response from MeiliSearch:', response);
+        await meiliIndex.updateSettings({
+            filterableAttributes: ['art', 'tags', 'zielgruppen'],
+            searchableAttributes: ['name', 'beschreibung', 'art', 'suchbegriffe'],
+        });
+        console.log('MeiliSearch-Index-Einstellungen erfolgreich aktualisiert.');
 
-    await meiliIndex.updateSettings({
-        filterableAttributes: ['art', 'tags', 'zielgruppen'],
-        searchableAttributes: ['name', 'beschreibung', 'art', 'suchbegriffe'],
     });
-    console.log('MeiliSearch-Index-Einstellungen erfolgreich aktualisiert.');
+}
 
-});
+intiMeiliclient();
 
-module.exports = meiliIndex;
+module.exports = { meiliIndex, intiMeiliclient }
 
 
 
